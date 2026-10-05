@@ -30,4 +30,10 @@ run = "go tool lefthook uninstall"
 description = "Check git hooks"
 run = "go tool lefthook validate"
 
+[tasks."vuln"]
+description = "Check for known security vulnerabilities with govulncheck"
+run = "go tool govulncheck ./..."
 
+[tasks."test"]
+description = "Run all unit tests with gotestsum"
+run = "go tool gotestsum --format testname -- -race ./internal/..."
