@@ -10,3 +10,7 @@ run = "go tool golangci-lint run ./..."
 description = "Run golangci-lint with auto-fix"
 run = "go tool golangci-lint run --fix ./..."
 
+[tasks."format"]
+description = "Format Go code with goimports"
+run = "go tool goimports -w $(find . -type f -name '*.go' -not -path './vendor/*')"
+
