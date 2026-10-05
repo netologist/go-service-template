@@ -14,3 +14,7 @@ run = "go tool golangci-lint run --fix ./..."
 description = "Format Go code with goimports"
 run = "go tool goimports -w $(find . -type f -name '*.go' -not -path './vendor/*')"
 
+[tasks."secret:check"]
+description = "Run Gitleaks to detect secrets"
+run = "go tool gitleaks detect --no-git -v"
+
