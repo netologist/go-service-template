@@ -1,0 +1,36 @@
+# Binaries & build artifacts
+bin/
+!.devcontainer/bin/
+tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/server
+/main
+*.test
+*.out
+coverage.out
+coverage.html
+build-errors.log
+logs/
+*.log
+# Dependency directories
+vendor/
+
+# Environment files
+.env
+.env.local
+*.env.local
+
+# IDEs
+.idea/
+*.iml
+.DS_Store
+
+# Docker Compose data volumes
+pgdata/
+
+# MkDocs generated site
+site/

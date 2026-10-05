@@ -1,0 +1,48 @@
+# Set default behavior to automatically normalize line endings to LF
+* text=auto eol=lf
+
+# Source code files with language-specific diff drivers
+*.go text eol=lf diff=golang
+*.sql text eol=lf
+*.proto text eol=lf
+
+# Configuration and data files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.xml text eol=lf
+*.http text eol=lf
+*.env* text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Dotfiles and container files
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+Dockerfile* text eol=lf
+
+# Shell and script files
+*.sh text eol=lf
+
+# Binary file types
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.tar binary
+*.tar.gz binary
+*.zip binary
+
+# GitHub Linguist attributes
+# Mark generated code so PR diffs stay clean and focused
+internal/infrastructure/postgres/db/*.go linguist-generated=true
+go.sum linguist-generated=true
+
+# Mark documentation files
+docs/** linguist-documentation=true
