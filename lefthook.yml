@@ -18,4 +18,6 @@ pre-push:
     unit-tests:
       tags: test
       run: go test -race -short ./internal/...
-
+    govulncheck:
+      tags: security
+      run: go tool govulncheck ./...

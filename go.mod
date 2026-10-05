@@ -6,7 +6,9 @@ tool (
 	github.com/evilmartians/lefthook/v2
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/zricethezav/gitleaks/v8
+	go
 	golang.org/x/tools/cmd/goimports
+	golang.org/x/vuln/cmd/govulncheck
 )
 
 require (
@@ -280,6 +282,7 @@ require (
 	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/tools v0.51.0 // indirect
+	golang.org/x/vuln v1.8.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
