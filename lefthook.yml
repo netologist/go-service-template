@@ -1,0 +1,21 @@
+pre-commit:
+  parallel: true
+  commands:
+    gitleaks:
+      tags: security secrets
+      run: go tool gitleaks detect --verbose --no-git
+    goimports:
+      tags: style
+      glob: "*.go"
+      run: go tool goimports -w {staged_files} && git add {staged_files}
+    golangci-lint:
+      tags: lint
+      glob: "*.go"
+      run: go tool golangci-lint run --new-from-rev=HEAD~1
+
+pre-push:
+  commands:
+    unit-tests:
+      tags: test
+      run: go test -race -short ./internal/...
+

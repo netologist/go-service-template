@@ -18,3 +18,16 @@ run = "go tool goimports -w $(find . -type f -name '*.go' -not -path './vendor/*
 description = "Run Gitleaks to detect secrets"
 run = "go tool gitleaks detect --no-git -v"
 
+[tasks."hooks:install"]
+description = "Install git hooks"
+run = "go tool lefthook install"
+
+[tasks."hooks:uninstall"]
+description = "Uninstall git hooks"
+run = "go tool lefthook uninstall"
+
+[tasks."hooks:check"]
+description = "Check git hooks"
+run = "go tool lefthook validate"
+
+
