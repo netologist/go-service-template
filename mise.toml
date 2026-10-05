@@ -1,2 +1,12 @@
 [tools]
 go = "1.27.1"
+
+
+[tasks."lint"]
+description = "Run golangci-lint on all packages"
+run = "go tool golangci-lint run ./..."
+
+[tasks."lint:fix"]
+description = "Run golangci-lint with auto-fix"
+run = "go tool golangci-lint run --fix ./..."
+
