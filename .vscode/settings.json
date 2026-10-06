@@ -1,0 +1,67 @@
+{
+  // ── REST Client ────────────────────────────────────────────────────────────
+  "rest-client.environmentVariables": {
+    "$shared": {
+      "contentType": "application/json"
+    },
+    "development": {
+      "baseUrl": "http://localhost:8080"
+    },
+    "staging": {
+      "baseUrl": "https://hotel-booking-staging.onrender.com"
+    },
+    "production": {
+      "baseUrl": "https://hotel-booking.onrender.com"
+    }
+  },
+
+  // ── Go: toolchain ──────────────────────────────────────────────────────────
+  "go.gopath": null,
+  "go.toolsManagement.autoUpdate": false,
+
+  // ── Go: linting ───────────────────────────────────────────────────────────
+  "go.lintTool": "golangci-lint",
+  "go.lintOnSave": "workspace",
+  "go.lintFlags": ["--fast", "--timeout=30s"],
+
+  // ── Go: test ──────────────────────────────────────────────────────────────
+  "go.testOnSave": false,
+  "go.testFlags": ["-race", "-count=1"],
+  "go.testTimeout": "120s",
+
+  // ── Go: coverage ──────────────────────────────────────────────────────────
+  "go.coverOnSave": false,
+  "go.coverOnTestPackage": true,
+  "go.coverMode": "atomic",
+  "go.coverShowCounts": true,
+  "go.coverageDecorator": {
+    "type": "gutter",
+    "coveredHighlightColor": "rgba(64,128,64,0.3)",
+    "uncoveredHighlightColor": "rgba(128,64,64,0.3)",
+    "coveredGutterStyle": "blockgreen",
+    "uncoveredGutterStyle": "blockred"
+  },
+
+  // ── Go: format ────────────────────────────────────────────────────────────
+  "go.formatTool": "goimports",
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "golang.go"
+  },
+
+  // ── Go: misc ──────────────────────────────────────────────────────────────
+  // "go.buildOnSave": "off",
+  "go.vetOnSave": "workspace",
+  "go.useLanguageServer": true,
+  "gopls": {
+    "ui.semanticTokens": true,
+    "ui.completion.usePlaceholders": true,
+    "ui.diagnostic.analyses": {
+      "shadow": true,
+      "unusedparams": true
+    }
+  }
+}

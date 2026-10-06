@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "golang.go",
+    "tamasfe.even-better-toml",
+    "redhat.vscode-yaml",
+    "42Crunch.vscode-openapi",
+    "humao.rest-client",
+    "ms-azuretools.vscode-docker",
+    "mikestead.dotenv",
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+    "ms-vscode-remote.remote-containers",
+    "EditorConfig.EditorConfig"
+  ]
+}
