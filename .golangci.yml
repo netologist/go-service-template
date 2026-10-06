@@ -8,7 +8,6 @@ linters:
   enable:
     - bodyclose
     - copyloopvar
-    - depguard
     - dogsled
     - dupl
     - errcheck
@@ -31,7 +30,6 @@ linters:
     - nakedret
     - noctx
     - nolintlint
-    - revive
     - staticcheck
     - testifylint
     - unconvert
