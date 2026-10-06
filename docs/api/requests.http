@@ -1,0 +1,16 @@
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+
+### ==============================================================================
+### 1. Healthcheck Probe
+### ==============================================================================
+
+# @name HealthCheck
+GET {{baseUrl}}/healthz
+Accept: application/json
+
+###
+# Expected:
+# HTTP 200
+# response.body.status == "ok"

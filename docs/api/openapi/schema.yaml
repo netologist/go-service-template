@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: Hotel Booking Platform API
+  description: Clean Architecture REST API for hotel discovery, capacity-checked room availability search, and atomic booking lifecycle management.
+  version: 2.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /healthz:
+    get:
+      summary: Health check probe
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
