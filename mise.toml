@@ -1,6 +1,11 @@
 [tools]
 go = "1.27.1"
 
+[env]
+DATABASE_URL = "postgres://postgres:postgresPassword123@localhost:5432/hotel_booking?sslmode=disable"
+GOOSE_DRIVER = "postgres"
+GOOSE_MIGRATION_DIR = "./migrations"
+GOOSE_DBSTRING = "{{ env.DATABASE_URL }}"
 
 [tasks."lint"]
 description = "Run golangci-lint on all packages"
@@ -45,3 +50,34 @@ run = "go test -v -count=1 ./tests/e2e/..."
 [tasks."generate:api"]
 description = "Generate Go code from OpenAPI specification"
 run = "go tool oapi-codegen -config docs/api/openapi/config.yaml docs/api/openapi/schema.yaml"
+
+[tasks."generate:db"]
+description = "Generate Go code from OpenAPI specification"
+run = "sqlc generate"
+
+[tasks."migrate:up"]
+description = "Apply database migrations with Goose"
+run = "go tool goose up"
+
+[tasks."migrate:down"]
+description = "Rollback the latest database migration"
+run = "go tool goose down"
+
+[tasks."migrate:status"]
+description = "View database migration status"
+run = "go tool goose status"
+
+[tasks."docker:build"]
+description = "Build scratch production container"
+run = "docker build -t hotel-booking:latest ."
+
+[tasks."docker:compose-up"]
+description = "Start local dependencies (PostgreSQL) using Docker Compose"
+run = "docker compose up -d"
+
+[tasks."docker:compose-down"]
+description = "Stop and clean local dependencies using Docker Compose"
+run = "docker compose down -v"
+
+[tasks.psql]
+run = "docker compose exec postgres psql -U postgres -d hotel_booking"
