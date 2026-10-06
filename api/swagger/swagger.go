@@ -1,4 +1,4 @@
-package handler
+package swagger
 
 import (
 	_ "embed"
@@ -6,13 +6,13 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/netologist/hotel-booking/internal/adapter/http/generated"
+	"github.com/netologist/hotel-booking/api/generated"
 )
 
-//go:embed swagger/index.html
+//go:embed index.html
 var swaggerHTML []byte
 
-func SwaggerRegistry(r chi.Router) {
+func Setup(r chi.Router) {
 	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		spec, err := generated.GetSpec()

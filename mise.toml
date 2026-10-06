@@ -49,7 +49,7 @@ run = "go test -v -count=1 ./tests/e2e/..."
 
 [tasks."generate:api"]
 description = "Generate Go code from OpenAPI specification"
-run = "go tool oapi-codegen -config docs/api/openapi/config.yaml docs/api/openapi/schema.yaml"
+run = "go tool oapi-codegen -config oapi-codegen.yml api/openapi.yaml"
 
 [tasks."generate:db"]
 description = "Generate Go code from OpenAPI specification"

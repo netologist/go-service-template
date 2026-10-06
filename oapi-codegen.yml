@@ -1,5 +1,5 @@
 package: generated
-output: internal/adapter/http/generated/api.gen.go
+output: api/generated/api.gen.go
 generate:
   models: true
   chi-server: true
