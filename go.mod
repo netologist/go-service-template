@@ -5,10 +5,17 @@ go 1.27.1
 tool (
 	github.com/evilmartians/lefthook/v2
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+	github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 	github.com/zricethezav/gitleaks/v8
 	golang.org/x/tools/cmd/goimports
 	golang.org/x/vuln/cmd/govulncheck
 	gotest.tools/gotestsum
+)
+
+require (
+	github.com/getkin/kin-openapi v0.142.0
+	github.com/go-chi/chi/v5 v5.3.2
+	github.com/go-chi/cors v1.2.2
 )
 
 require (
@@ -87,6 +94,7 @@ require (
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
 	github.com/dlclark/regexp2/v2 v2.2.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
+	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/evilmartians/lefthook/v2 v2.1.17 // indirect
@@ -101,6 +109,8 @@ require (
 	github.com/gitleaks/go-gitdiff v0.9.1 // indirect
 	github.com/go-critic/go-critic v0.15.0 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68 // indirect
+	github.com/go-openapi/jsonpointer v0.23.1 // indirect
+	github.com/go-openapi/swag/jsonname v0.26.0 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
 	github.com/go-toolsmith/astequal v1.2.0 // indirect
@@ -201,6 +211,9 @@ require (
 	github.com/nishanths/predeclared v0.2.2 // indirect
 	github.com/nunnatsa/ginkgolinter v0.24.0 // indirect
 	github.com/nwaples/rardecode/v2 v2.1.0 // indirect
+	github.com/oapi-codegen/oapi-codegen/v2 v2.8.0 // indirect
+	github.com/oasdiff/yaml v0.1.1 // indirect
+	github.com/oasdiff/yaml3 v0.0.14 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/prometheus/client_golang v1.12.1 // indirect
@@ -234,6 +247,8 @@ require (
 	github.com/sorairolake/lzip-go v0.3.5 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/sourcegraph/go-diff v0.9.0 // indirect
+	github.com/speakeasy-api/jsonpath v0.6.3 // indirect
+	github.com/speakeasy-api/openapi v1.24.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
@@ -258,6 +273,7 @@ require (
 	github.com/urfave/cli/v3 v3.10.1 // indirect
 	github.com/uudashr/gocognit v1.2.1 // indirect
 	github.com/uudashr/iface v1.5.1 // indirect
+	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/wasilibs/go-re2 v1.9.0 // indirect
 	github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 // indirect
 	github.com/xen0n/gosmopolitan v1.3.0 // indirect

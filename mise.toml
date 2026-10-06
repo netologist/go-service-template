@@ -37,3 +37,7 @@ run = "go tool govulncheck ./..."
 [tasks."test"]
 description = "Run all unit tests with gotestsum"
 run = "go tool gotestsum --format testname -- -race ./internal/..."
+
+[tasks."generate:api"]
+description = "Generate Go code from OpenAPI specification"
+run = "go tool oapi-codegen -config docs/api/openapi/config.yaml docs/api/openapi/schema.yaml"
