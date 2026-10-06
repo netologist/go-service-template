@@ -1,0 +1,9 @@
+template: testify
+packages:
+  github.com/netologist/hotel-booking/internal/domain:
+    config:
+      all: true
+      dir: "internal/gen/mocks/{{.SrcPackageName}}"
+      pkgname: "{{.SrcPackageName}}mocks"
+      filename: "{{.InterfaceName | snakecase}}_mock.go"
+      structname: "Mock{{.InterfaceName}}"

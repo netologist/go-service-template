@@ -47,13 +47,13 @@ run = "go tool gotestsum --format testname -- -race ./internal/..."
 description = "Run Ginkgo & Gomega E2E test suite"
 run = "go test -v -count=1 ./tests/e2e/..."
 
-[tasks."generate:api"]
+[tasks."generate:openapi"]
 description = "Generate Go code from OpenAPI specification"
 run = "go tool oapi-codegen -config oapi-codegen.yml api/openapi.yaml"
 
-[tasks."generate:db"]
+[tasks."generate:sqlc"]
 description = "Generate Go code from OpenAPI specification"
-run = "sqlc generate"
+run = "go tool sqlc generate"
 
 [tasks."migrate:up"]
 description = "Apply database migrations with Goose"
@@ -81,3 +81,19 @@ run = "docker compose down -v"
 
 [tasks.psql]
 run = "docker compose exec postgres psql -U postgres -d hotel_booking"
+
+[tasks."mocks:generate"]
+description = "Generate mocks with mockery"
+alias = "generate:mocks"
+run = "go tool mockery"
+sources = [".mockery.yml", "internal/**/*.go"]
+outputs = ["internal/gen/mocks/**/*.go"]
+
+[tasks."mocks:clean"]
+description = "Remove generated mocks"
+run = "rm -rf internal/gen/mocks"
+
+[tasks."mocks:check"]
+description = "Fail if generated mocks are out of date (for CI)"
+depends = ["mocks"]
+run = "git diff --exit-code -- internal/gen/mocks"
