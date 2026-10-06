@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/netologist/hotel-booking/api/generated"
+	"github.com/netologist/hotel-booking/internal/gen/openapi"
 )
 
 //go:embed index.html
@@ -15,7 +15,7 @@ var swaggerHTML []byte
 func Setup(r chi.Router) {
 	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		spec, err := generated.GetSpec()
+		spec, err := openapi.GetSpec()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

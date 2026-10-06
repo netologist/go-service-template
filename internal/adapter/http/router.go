@@ -1,4 +1,4 @@
-package rest
+package http
 
 import (
 	"net/http"
@@ -7,8 +7,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	api "github.com/netologist/hotel-booking/api/generated"
-	"github.com/netologist/hotel-booking/api/swagger"
+	"github.com/netologist/hotel-booking/internal/adapter/http/util/swagger"
+	"github.com/netologist/hotel-booking/internal/gen/openapi"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 )
 
 // NewRouter constructs a Chi HTTP router with standard middlewares and domain endpoints.
-func NewRouter(server api.ServerInterface) http.Handler {
+func NewRouter(server openapi.ServerInterface) http.Handler {
 	r := chi.NewRouter()
 
 	// Base middlewares
@@ -38,7 +38,7 @@ func NewRouter(server api.ServerInterface) http.Handler {
 	}))
 
 	swagger.Setup(r)
-	api.HandlerFromMux(server, r)
+	openapi.HandlerFromMux(server, r)
 
 	return r
 }

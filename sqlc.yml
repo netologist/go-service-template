@@ -1,12 +1,12 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    schema: "db/migrations"
-    queries: "db/queries"
+    schema: "database/migrations"
+    queries: "database/queries"
     gen:
       go:
-        package: "generated"
-        out: "db/generated"
+        package: "sqlc"
+        out: "internal/gen/sqlc"
         sql_package: "pgx/v5"
         emit_json_tags: true
         emit_interface: true

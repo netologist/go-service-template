@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/netologist/hotel-booking/internal/adapter/rest"
-	"github.com/netologist/hotel-booking/internal/adapter/rest/handler"
+	httpadapter "github.com/netologist/hotel-booking/internal/adapter/http"
+	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
 )
 
 const (
@@ -20,8 +20,8 @@ const (
 )
 
 func main() {
-	handlers := rest.NewServer(*handler.NewHealthCheck())
-	router := rest.NewRouter(handlers)
+	handlers := httpadapter.NewServer(*handler.NewHealthCheck())
+	router := httpadapter.NewRouter(handlers)
 	server := &http.Server{
 		Addr:              DEFAULT_SERVER_PORT,
 		ReadHeaderTimeout: DEFAULT_READHEADER_TIMEOUT,

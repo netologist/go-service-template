@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,4 +15,9 @@ type Hotel struct {
 	City      string    `json:"city"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// HotelRepository interface
+type HotelRepository interface {
+	List(ctx context.Context) ([]*Hotel, error)
 }

@@ -3,7 +3,7 @@
 //   sqlc v1.31.1
 // source: hotels.sql
 
-package generated
+package sqlc
 
 import (
 	"context"

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/netologist/hotel-booking/internal/adapter/rest/util"
+	"github.com/netologist/hotel-booking/internal/adapter/http/util"
 )
 
 type HealthCheck struct {

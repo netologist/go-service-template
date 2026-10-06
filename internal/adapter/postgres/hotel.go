@@ -6,23 +6,18 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	db "github.com/netologist/hotel-booking/db/generated"
 	"github.com/netologist/hotel-booking/internal/domain"
+	"github.com/netologist/hotel-booking/internal/gen/sqlc"
 )
 
-// HotelRepository interface
-type HotelRepository interface {
-	List(ctx context.Context) ([]*domain.Hotel, error)
+// NewHotelRepository creates a new HotelRepository.
+func NewHotelRepository(pool *pgxpool.Pool) domain.HotelRepository {
+	return &hotelRepository{queries: sqlc.New(pool)}
 }
 
 // hotelRepository implements domain.HotelRepository via SQLC.
 type hotelRepository struct {
-	queries *db.Queries
-}
-
-// NewHotelRepository creates a new HotelRepository.
-func NewHotelRepository(pool *pgxpool.Pool) HotelRepository {
-	return &hotelRepository{queries: db.New(pool)}
+	queries *sqlc.Queries
 }
 
 func (h *hotelRepository) List(ctx context.Context) ([]*domain.Hotel, error) {
@@ -38,7 +33,7 @@ func (h *hotelRepository) List(ctx context.Context) ([]*domain.Hotel, error) {
 }
 
 // Model mappers
-func toDomainHotel(row db.Hotel) *domain.Hotel {
+func toDomainHotel(row sqlc.Hotel) *domain.Hotel {
 	return &domain.Hotel{
 		ID:        uuid.UUID(row.ID.Bytes),
 		Name:      row.Name,
