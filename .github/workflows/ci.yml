@@ -40,19 +40,59 @@ jobs:
       - name: Regenerate API code
         run: go tool oapi-codegen -config oapi-codegen.yml api/openapi.yaml
 
+      - name: Ensure generated code is in sync
+        run: |
+          if ! git diff --exit-code internal/gen/openapi/api.gen.go; then
+            echo "Error: OpenAPI generated files are out of sync. Run 'mise run generate:openapi' and commit the changes."
+            exit 1
+          fi
+
+
+  validate-mocks:
+    name: Mockery Validation & Drift Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
       - name: Regenerate Mocks
         run: go tool mockery
+
+      - name: Ensure mocks are in sync
+        run: |
+          if ! git diff --exit-code internal/gen/mocks; then
+            echo "Error: Generated mocks are out of sync. Run 'mise run mocks:generate' and commit the changes."
+            exit 1
+          fi
+
+  validate-sqlc:
+    name: SQL Queries Validation & Drift Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
 
       - name: Regenerate SQL Queries
         run: go tool sqlc generate
 
-      - name: Ensure generated code is in sync
+      - name: Ensure SQL queries are in sync
         run: |
-          if ! git diff --exit-code internal/adapter/http/generated/api.gen.go; then
-            echo "Error: OpenAPI generated files are out of sync. Run 'mise run generate:api' and commit the changes."
+          if ! git diff --exit-code internal/gen/sqlc; then
+            echo "Error: Generated SQL queries are out of sync. Run 'mise run generate:sqlc' and commit the changes."
             exit 1
           fi
-
   security:
     name: Security Checks (Secrets & Vulnerabilities)
     runs-on: ubuntu-latest
@@ -149,7 +189,7 @@ jobs:
   build-and-scan:
     name: Build, Scan (Trivy) & Push Container Image
     runs-on: ubuntu-latest
-    needs: [validate-spec, security, lint, test, e2e]
+    needs: [validate-spec, validate-mocks, validate-sqlc, security, lint, test, e2e]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
