@@ -9,16 +9,24 @@ RUN go mod download
 # Copy all codes
 COPY . .
 
-# Build
+# Build application server
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/server ./cmd/server
 
-# ---- Runtime ----
-FROM gcr.io/distroless/static-debian12:nonroot
+# Build goose migration binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/goose github.com/pressly/goose/v3/cmd/goose
 
+# ---- Runtime ----
+FROM alpine:3.20
+
+RUN apk --no-cache add ca-certificates
+
+# Copy server binary and goose migration tool
 COPY --from=builder /bin/server /server
+COPY --from=builder /bin/goose /bin/goose
+
+# Copy database migrations directory
+COPY database/migrations /database/migrations
 
 EXPOSE 8080
-
-USER nonroot:nonroot
 
 ENTRYPOINT ["/server"]

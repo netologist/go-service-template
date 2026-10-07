@@ -14,7 +14,7 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo && \
     mv ./tests/e2e/e2e.test /bin/e2e.test
 
 # Step 3: Final Runner
-FROM alpine:3.20 AS runner
+FROM alpine:3.20
 RUN apk --no-cache add ca-certificates
 COPY --from=builder /bin/e2e.test /e2e.test
 

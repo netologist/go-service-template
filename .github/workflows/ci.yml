@@ -17,7 +17,6 @@ concurrency:
 permissions:
   contents: read
   packages: write
-  security-events: write
 
 env:
   REGISTRY: ghcr.io
@@ -182,15 +181,9 @@ jobs:
           - name: api
             image_suffix: ""
             dockerfile: Dockerfile
-            target: ""
-          - name: migration
-            image_suffix: "-migration"
-            dockerfile: Dockerfile.e2e
-            target: "builder"
           - name: e2e
             image_suffix: "-e2e"
             dockerfile: Dockerfile.e2e
-            target: "runner"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -221,7 +214,6 @@ jobs:
         with:
           context: .
           file: ./${{ matrix.service.dockerfile }}
-          target: ${{ matrix.service.target }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -247,33 +239,17 @@ jobs:
         id: vars
         run: echo "short_sha=sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Run Trivy vulnerability scanner on built API image
-        uses: aquasecurity/trivy-action@0.29.0
+      - name: "Trivy Security Gate: Scan API image for vulnerabilities"
+        uses: docker://ghcr.io/aquasecurity/trivy:latest
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.short_sha }}
-          format: "sarif"
-          output: "trivy-results.sarif"
-          severity: "CRITICAL,HIGH"
-
-      - name: Upload Trivy SARIF results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: "trivy-results.sarif"
-
-      - name: "Gate: Fail if API image has unmitigated CRITICAL or HIGH vulnerabilities"
-        uses: aquasecurity/trivy-action@0.29.0
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.short_sha }}
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          severity: "CRITICAL,HIGH"
-
+          args: image --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.short_sha }}
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
   e2e:
     name: End-to-End Tests (Docker Compose)
     runs-on: ubuntu-latest
-    needs: [build-images]
+    needs: [scan-api]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -308,7 +284,7 @@ jobs:
   tag-latest:
     name: Tag & Promote Verified Images to Latest
     runs-on: ubuntu-latest
-    needs: [e2e, scan-api]
+    needs: [e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout repository
@@ -327,7 +303,7 @@ jobs:
 
       - name: Tag and push latest for verified images
         run: |
-          for SUFFIX in "" "-migration" "-e2e"; do
+          for SUFFIX in "" "-e2e"; do
             SRC="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${SUFFIX}:${{ steps.vars.outputs.short_sha }}"
             DST="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${SUFFIX}:latest"
             echo "Promoting $SRC to $DST..."
