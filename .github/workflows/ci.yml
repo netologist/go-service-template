@@ -38,7 +38,13 @@ jobs:
           cache: true
 
       - name: Regenerate API code
-        run: go tool oapi-codegen -config docs/api/openapi/config.yaml docs/api/openapi/schema.yaml
+        run: go tool oapi-codegen -config oapi-codegen.yml api/openapi.yaml
+
+      - name: Regenerate Mocks
+        run: go tool mockery
+
+      - name: Regenerate SQL Queries
+        run: go tool sqlc generate
 
       - name: Ensure generated code is in sync
         run: |
