@@ -209,6 +209,7 @@ require (
 	github.com/kaptinlin/jsonpointer v0.4.27 // indirect
 	github.com/kaptinlin/jsonschema v0.9.3 // indirect
 	github.com/karamaru-alpha/copyloopvar v1.2.2 // indirect
+	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/kisielk/errcheck v1.20.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.6 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
