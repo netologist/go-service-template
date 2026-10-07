@@ -1,8 +1,11 @@
 template: testify
 packages:
-  github.com/netologist/hotel-booking/internal/domain:
+  github.com/netologist/hotel-booking/internal:
     config:
       all: true
+      recursive: true
+      exclude-subpkg-regex:
+        - ".*/internal/gen/.*"
       dir: "internal/gen/mocks/{{.SrcPackageName}}"
       pkgname: "{{.SrcPackageName}}mocks"
       filename: "{{.InterfaceName | snakecase}}_mock.go"

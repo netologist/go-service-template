@@ -7,7 +7,41 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const createHotel = `-- name: CreateHotel :one
+INSERT INTO hotels (id, name, address, city)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, address, city, created_at, updated_at
+`
+
+type CreateHotelParams struct {
+	ID      pgtype.UUID `json:"id"`
+	Name    string      `json:"name"`
+	Address string      `json:"address"`
+	City    string      `json:"city"`
+}
+
+func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error) {
+	row := q.db.QueryRow(ctx, createHotel,
+		arg.ID,
+		arg.Name,
+		arg.Address,
+		arg.City,
+	)
+	var i Hotel
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Address,
+		&i.City,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const listHotels = `-- name: ListHotels :many
 SELECT id, name, address, city, created_at, updated_at

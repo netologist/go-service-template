@@ -4,7 +4,7 @@ go = "1.27.1"
 [env]
 DATABASE_URL = "postgres://postgres:postgresPassword123@localhost:5432/hotel_booking?sslmode=disable"
 GOOSE_DRIVER = "postgres"
-GOOSE_MIGRATION_DIR = "./migrations"
+GOOSE_MIGRATION_DIR = "./database/migrations"
 GOOSE_DBSTRING = "{{ env.DATABASE_URL }}"
 
 [tasks."lint"]

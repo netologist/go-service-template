@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE hotels (
+CREATE TABLE IF NOT EXISTS hotels (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     address VARCHAR(255) NOT NULL,
@@ -7,6 +7,6 @@ CREATE TABLE hotels (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX idx_hotels_name ON hotels (name);
+CREATE INDEX IF NOT EXISTS idx_hotels_name ON hotels (name);
 -- +goose Down
 DROP TABLE IF EXISTS hotels;

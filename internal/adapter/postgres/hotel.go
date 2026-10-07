@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/netologist/hotel-booking/internal/domain"
 	"github.com/netologist/hotel-booking/internal/gen/sqlc"
@@ -12,12 +13,17 @@ import (
 
 // NewHotelRepository creates a new HotelRepository.
 func NewHotelRepository(pool *pgxpool.Pool) domain.HotelRepository {
-	return &hotelRepository{queries: sqlc.New(pool)}
+	return NewHotelRepositoryWithQuerier(sqlc.New(pool))
+}
+
+// NewHotelRepositoryWithQuerier creates a new HotelRepository with a custom Querier.
+func NewHotelRepositoryWithQuerier(queries sqlc.Querier) domain.HotelRepository {
+	return &hotelRepository{queries: queries}
 }
 
 // hotelRepository implements domain.HotelRepository via SQLC.
 type hotelRepository struct {
-	queries *sqlc.Queries
+	queries sqlc.Querier
 }
 
 func (h *hotelRepository) List(ctx context.Context) ([]*domain.Hotel, error) {
@@ -32,6 +38,19 @@ func (h *hotelRepository) List(ctx context.Context) ([]*domain.Hotel, error) {
 	return hotels, nil
 }
 
+func (h *hotelRepository) Create(ctx context.Context, hotel *domain.Hotel) (*domain.Hotel, error) {
+	row, err := h.queries.CreateHotel(ctx, sqlc.CreateHotelParams{
+		ID:      pgtype.UUID{Bytes: hotel.ID, Valid: true},
+		Name:    hotel.Name,
+		Address: hotel.Address,
+		City:    hotel.City,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toDomainHotel(row), nil
+}
+
 // Model mappers
 func toDomainHotel(row sqlc.Hotel) *domain.Hotel {
 	return &domain.Hotel{
@@ -39,7 +58,7 @@ func toDomainHotel(row sqlc.Hotel) *domain.Hotel {
 		Name:      row.Name,
 		Address:   row.Address,
 		City:      row.City,
-		CreatedAt: row.CreatedAt.Time,
-		UpdatedAt: row.UpdatedAt.Time,
+		CreatedAt: &row.CreatedAt.Time,
+		UpdatedAt: &row.UpdatedAt.Time,
 	}
 }

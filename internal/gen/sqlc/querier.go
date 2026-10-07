@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error)
 	ListHotels(ctx context.Context) ([]Hotel, error)
 }
 

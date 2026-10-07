@@ -9,15 +9,16 @@ import (
 
 // Hotel represents a named accommodation establishment.
 type Hotel struct {
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	Address   string    `json:"address"`
-	City      string    `json:"city"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        uuid.UUID
+	Name      string
+	Address   string
+	City      string
+	CreatedAt *time.Time
+	UpdatedAt *time.Time
 }
 
 // HotelRepository interface
 type HotelRepository interface {
 	List(ctx context.Context) ([]*Hotel, error)
+	Create(ctx context.Context, hotel *Hotel) (*Hotel, error)
 }
