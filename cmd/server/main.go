@@ -3,49 +3,106 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	httpadapter "github.com/netologist/hotel-booking/internal/adapter/http"
 	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
-)
-
-const (
-	DEFAULT_SERVER_PORT        = ":8080"
-	DEFAULT_SHUTDOWN_TIMEOUT   = 10 * time.Second
-	DEFAULT_READHEADER_TIMEOUT = 30 * time.Second
+	"github.com/netologist/hotel-booking/internal/adapter/postgres"
+	"github.com/netologist/hotel-booking/internal/adapter/validator"
+	"github.com/netologist/hotel-booking/internal/config"
+	"github.com/netologist/hotel-booking/internal/usecase"
 )
 
 func main() {
-	handlers := httpadapter.NewServer(*handler.NewHealthCheck())
-	router := httpadapter.NewRouter(handlers)
-	server := &http.Server{
-		Addr:              DEFAULT_SERVER_PORT,
-		ReadHeaderTimeout: DEFAULT_READHEADER_TIMEOUT,
-		Handler:           router,
+	cfg, err := config.Load()
+	if err != nil {
+		slog.Error("failed to load configuration", "error", err)
+		os.Exit(1)
 	}
 
-	go func() {
-		if err := server.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
-		}
-	}()
+	setupLogger(cfg.LogLevel)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	<-ctx.Done()
+	pool, err := setupPostgresPool(ctx, cfg)
+	if err != nil {
+		slog.Error("database connection failed", "error", err)
+		return
+	}
+	defer pool.Close()
+	slog.Info("connected to PostgreSQL database successfully")
 
-	shutdownCtx, cancel := context.WithTimeout(
-		context.Background(),
-		DEFAULT_SHUTDOWN_TIMEOUT,
+	if err := runServer(ctx, pool, cfg); err != nil {
+		slog.Error("server error", "error", err)
+	}
+}
+
+func runServer(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config) error {
+	appValidator := validator.NewForJsonTag()
+	hotelRepo := postgres.NewHotelRepository(pool)
+	hotelService := usecase.NewHotelService(hotelRepo)
+	handlers := httpadapter.NewServer(
+		handler.NewHealthCheck(),
+		handler.NewHotelHandler(hotelService, appValidator),
 	)
+	router := httpadapter.NewRouter(handlers)
+
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),
+		ReadHeaderTimeout: cfg.ServerReadHeaderTimeout,
+		Handler:           router,
+	}
+
+	serverErrCh := make(chan error, 1)
+	go func() {
+		slog.Info("HTTP server listening", "address", server.Addr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErrCh <- err
+		}
+	}()
+
+	select {
+	case err := <-serverErrCh:
+		return fmt.Errorf("server listen error: %w", err)
+	case <-ctx.Done():
+		slog.Info("shutdown signal received, initiating graceful shutdown")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ServerShutdownTimeout)
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("graceful shutdown failed: %v", err)
+		return fmt.Errorf("graceful shutdown failed: %w", err)
 	}
+
+	slog.Info("server shutdown completed successfully")
+	return nil
+}
+
+func setupLogger(levelStr string) {
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(levelStr)); err != nil {
+		level = slog.LevelInfo
+	}
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	slog.SetDefault(slog.New(handler))
+}
+
+func setupPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
+	return postgres.NewPool(ctx,
+		postgres.WithDatabaseURL(cfg.DatabaseURL),
+		postgres.WithMaxConns(cfg.DBMaxConns),
+		postgres.WithMinConns(cfg.DBMinConns),
+		postgres.WithMaxConnLifetime(cfg.DBMaxConnLifetime),
+		postgres.WithMaxConnIdleTime(cfg.DBMaxConnIdleTime),
+		postgres.WithHealthCheckPeriod(cfg.DBHealthCheckPeriod),
+		postgres.WithPingTimeout(cfg.DBPingTimeout),
+	)
 }
