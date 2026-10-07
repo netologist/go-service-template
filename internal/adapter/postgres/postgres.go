@@ -3,39 +3,38 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const (
-	maxConns            = 25
-	minConns            = 2
-	maxConnLifetime     = 30 * time.Minute
-	maxConnIdleTime     = 5 * time.Minute
-	healthCheckPeriod   = 1 * time.Minute
-	postgresPingTimeout = 5 * time.Second
-)
+// NewPool initializes a PostgreSQL connection pool with optional configuration parameters.
+func NewPool(ctx context.Context, opts ...PoolOption) (*pgxpool.Pool, error) {
+	options := defaultPoolOptions()
+	for _, opt := range opts {
+		opt(&options)
+	}
 
-// NewPool initializes a PostgreSQL connection pool.
-func NewPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
-	cfg, err := pgxpool.ParseConfig(databaseURL)
+	if options.databaseURL == "" {
+		return nil, fmt.Errorf("database url cannot be null")
+	}
+
+	cfg, err := pgxpool.ParseConfig(options.databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed parsing database configuration: %w", err)
 	}
 
-	cfg.MaxConns = maxConns
-	cfg.MinConns = minConns
-	cfg.MaxConnLifetime = maxConnLifetime
-	cfg.MaxConnIdleTime = maxConnIdleTime
-	cfg.HealthCheckPeriod = healthCheckPeriod
+	cfg.MaxConns = options.maxConns
+	cfg.MinConns = options.minConns
+	cfg.MaxConnLifetime = options.maxConnLifetime
+	cfg.MaxConnIdleTime = options.maxConnIdleTime
+	cfg.HealthCheckPeriod = options.healthCheckPeriod
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating connection pool: %w", err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, postgresPingTimeout)
+	pingCtx, cancel := context.WithTimeout(ctx, options.postgresPingTimeout)
 	defer cancel()
 
 	if err := pool.Ping(pingCtx); err != nil {

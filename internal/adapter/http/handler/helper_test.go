@@ -6,7 +6,7 @@ import (
 
 	httpadapter "github.com/netologist/hotel-booking/internal/adapter/http"
 	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
-	customvalidator "github.com/netologist/hotel-booking/internal/adapter/validator"
+	"github.com/netologist/hotel-booking/internal/adapter/validator"
 	usecasemocks "github.com/netologist/hotel-booking/internal/gen/mocks/usecase"
 )
 
@@ -19,7 +19,7 @@ func SetupTestRouterWithMock(t *testing.T) (http.Handler, *usecasemocks.MockHote
 	mockHotelService := usecasemocks.NewMockHotelService(t)
 	server := httpadapter.NewServer(
 		handler.NewHealthCheck(),
-		handler.NewHotelHandler(mockHotelService, customvalidator.New()),
+		handler.NewHotelHandler(mockHotelService, validator.NewForJsonTag()),
 	)
 	return httpadapter.NewRouter(server), mockHotelService
 }

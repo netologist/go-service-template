@@ -11,10 +11,14 @@ import (
 
 const jsonTagParts = 2
 
-func New() *validator.Validate {
+func NewForJsonTag() *validator.Validate {
+	return New("json")
+}
+
+func New(tagName string) *validator.Validate {
 	v := validator.New()
 	v.RegisterTagNameFunc(func(f reflect.StructField) string {
-		name := strings.SplitN(f.Tag.Get("json"), ",", jsonTagParts)[0]
+		name := strings.SplitN(f.Tag.Get(tagName), ",", jsonTagParts)[0]
 		if name == "-" || name == "" {
 			return f.Name
 		}

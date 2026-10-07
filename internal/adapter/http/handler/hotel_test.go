@@ -38,7 +38,7 @@ const (
 
 func TestNewHotelHandler(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.New()
+	v := customvalidator.NewForJsonTag()
 
 	h := handler.NewHotelHandler(mockService, v)
 	require.NotNil(t, h)
@@ -48,7 +48,7 @@ func TestHotelHandler_CreateHotel_Success(t *testing.T) {
 	hotelID := uuid.New()
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.New()
+	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
 	mockService.EXPECT().CreateHotel(mock.Anything, usecase.CreateHotelInput{
@@ -96,7 +96,7 @@ func TestHotelHandler_CreateHotel_Success(t *testing.T) {
 
 func TestHotelHandler_CreateHotel_MalformedJSON(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.New()
+	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
 	req := httptest.NewRequestWithContext(
@@ -218,7 +218,7 @@ func TestHotelHandler_CreateHotel_ValidationFailure(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := usecasemocks.NewMockHotelService(t)
-			v := customvalidator.New()
+			v := customvalidator.NewForJsonTag()
 			h := handler.NewHotelHandler(mockService, v)
 
 			payload, err := json.Marshal(tt.body)
@@ -260,7 +260,7 @@ func TestHotelHandler_CreateHotel_ValidationFailure(t *testing.T) {
 
 func TestHotelHandler_CreateHotel_ServiceError(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.New()
+	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
 	serviceErr := errors.New("database connection failed")
@@ -294,7 +294,7 @@ func TestHotelHandler_FindHotels_SuccessWithHotels(t *testing.T) {
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
 
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.New()
+	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
 	expectedHotels := []usecase.HotelOutput{
@@ -348,7 +348,7 @@ func TestHotelHandler_FindHotels_SuccessWithHotels(t *testing.T) {
 
 func TestHotelHandler_FindHotels_EmptyList(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.New()
+	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
 	mockService.EXPECT().FindHotels(mock.Anything).Return([]usecase.HotelOutput{}, nil).Once()
@@ -368,7 +368,7 @@ func TestHotelHandler_FindHotels_EmptyList(t *testing.T) {
 
 func TestHotelHandler_FindHotels_ServiceError(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.New()
+	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
 	serviceErr := errors.New("failed to retrieve hotels")
