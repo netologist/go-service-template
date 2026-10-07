@@ -1,0 +1,37 @@
+services:
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+      target: builder
+    command: ["sh", "-c", "go tool goose -dir database/migrations postgres \"$$DATABASE_URL\" up"]
+    environment:
+      DATABASE_URL: postgres://postgres:postgresPassword123@postgres:5432/hotel_booking?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://postgres:postgresPassword123@postgres:5432/hotel_booking?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+
+  e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+      target: runner
+    environment:
+      BASE_URL: http://api:8080
+    depends_on:
+      api:
+        condition: service_started

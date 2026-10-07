@@ -1,0 +1,25 @@
+# ---- Builder Stage ----
+FROM golang:1.27-alpine AS builder
+
+WORKDIR /app
+
+# Cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Compile E2E test suite artifact using Ginkgo build
+RUN CGO_ENABLED=0 go run github.com/onsi/ginkgo/v2/ginkgo build ./tests/e2e && \
+    mv tests/e2e/e2e.test /bin/e2e.test
+
+# ---- Runner Stage ----
+FROM alpine:3.20 AS runner
+
+RUN apk --no-cache add ca-certificates
+
+COPY --from=builder /bin/e2e.test /e2e.test
+
+ENTRYPOINT ["/e2e.test"]
+CMD ["-ginkgo.v"]

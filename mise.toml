@@ -43,9 +43,21 @@ run = "go tool govulncheck ./..."
 description = "Run all unit tests with gotestsum"
 run = "go tool gotestsum --format testname -- -race ./internal/..."
 
+
+[tasks."test:coverage"]
+description = "Run unit tests with race detection and show function-level coverage"
+run = "go tool gotestsum --format testname -- -race -covermode=atomic -coverprofile=coverage.out $(go list ./internal/... | grep -v '/internal/gen') && go tool cover -func=coverage.out"
+
+[tasks."test:coverage:html"]
+description = "Run unit tests and open interactive HTML coverage report"
+run = "go tool gotestsum --format testname -- -race -covermode=atomic -coverprofile=coverage.out $(go list ./internal/... | grep -v '/internal/gen') && go tool cover -html=coverage.out"
 [tasks."test:e2e"]
 description = "Run Ginkgo & Gomega E2E test suite"
 run = "go test -v -count=1 ./tests/e2e/..."
+
+[tasks."test:e2e:docker"]
+description = "Run containerized E2E test suite with Docker Compose"
+run = "docker compose -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from e2e"
 
 [tasks."generate:openapi"]
 description = "Generate Go code from OpenAPI specification"
