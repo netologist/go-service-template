@@ -16,7 +16,7 @@ func TestDefaultPoolOptions(t *testing.T) {
 	assert.Equal(t, 5*time.Minute, opts.maxConnIdleTime)
 	assert.Equal(t, 1*time.Minute, opts.healthCheckPeriod)
 	assert.Equal(t, 5*time.Second, opts.postgresPingTimeout)
-	assert.Nil(t, opts.databaseURL)
+	assert.Empty(t, opts.databaseURL)
 }
 
 func TestPoolOptions_Overrides(t *testing.T) {
@@ -28,7 +28,7 @@ func TestPoolOptions_Overrides(t *testing.T) {
 	customIdleTime := 10 * time.Minute
 	customHealthCheck := 2 * time.Minute
 	customPing := 3 * time.Second
-
+	customURL := "postgres://localhost:5432/test"
 	options := []PoolOption{
 		WithMaxConns(customMaxConns),
 		WithMinConns(customMinConns),
@@ -36,6 +36,7 @@ func TestPoolOptions_Overrides(t *testing.T) {
 		WithMaxConnIdleTime(customIdleTime),
 		WithHealthCheckPeriod(customHealthCheck),
 		WithPingTimeout(customPing),
+		WithDatabaseURL(customURL),
 	}
 
 	for _, opt := range options {
@@ -47,5 +48,6 @@ func TestPoolOptions_Overrides(t *testing.T) {
 	assert.Equal(t, customLifetime, opts.maxConnLifetime)
 	assert.Equal(t, customIdleTime, opts.maxConnIdleTime)
 	assert.Equal(t, customHealthCheck, opts.healthCheckPeriod)
+	assert.Equal(t, customURL, opts.databaseURL)
 	assert.Equal(t, customPing, opts.postgresPingTimeout)
 }
