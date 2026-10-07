@@ -26,3 +26,114 @@ paths:
                     type: string
                     format: date-time
 
+  /api/v1/hotels:
+    get:
+      summary: Find a hotel based on its name or list all hotels
+      operationId: findHotels
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Hotel name query string
+          schema:
+            type: string
+            example: "Budapest"
+      responses:
+        '200':
+          description: Matching hotels list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hotel'
+    post:
+      summary: Register a new hotel
+      operationId: createHotel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHotelRequest'
+      responses:
+        '201':
+          description: Hotel registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hotel'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  responses:
+    BadRequest:
+      description: Invalid request payload or business invariant violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: "room cannot be occupied by more people than its capacity"
+        code:
+          type: string
+          example: "ROOM_CAPACITY_EXCEEDED"
+
+    Hotel:
+      type: object
+      required:
+        - id
+        - name
+        - address
+        - city
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Grand Budapest Hotel"
+        address:
+          type: string
+          example: "100 Alpine Way"
+        city:
+          type: string
+          example: "Lutz"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateHotelRequest:
+      type: object
+      required:
+        - name
+        - address
+        - city
+      properties:
+        name:
+          type: string
+          example: "Grand Budapest Hotel"
+          x-oapi-codegen-extra-tags:
+            validate: required,min=2,max=255
+        address:
+          type: string
+          example: "100 Alpine Way"
+          x-oapi-codegen-extra-tags:
+            validate: required,min=2,max=255
+        city:
+          type: string
+          example: "Lutz"
+          x-oapi-codegen-extra-tags:
+            validate: required,min=2,max=100

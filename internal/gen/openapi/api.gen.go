@@ -7,18 +7,76 @@ import (
 	"bytes"
 	"compress/flate"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// CreateHotelRequest defines model for CreateHotelRequest.
+type CreateHotelRequest struct {
+	// Address Example: 100 Alpine Way
+	Address string `json:"address" validate:"required,min=2,max=255"`
+
+	// City Example: Lutz
+	City string `json:"city" validate:"required,min=2,max=100"`
+
+	// Name Example: Grand Budapest Hotel
+	Name string `json:"name" validate:"required,min=2,max=255"`
+}
+
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	// Code Example: ROOM_CAPACITY_EXCEEDED
+	Code *string `json:"code,omitempty"`
+
+	// Error Example: room cannot be occupied by more people than its capacity
+	Error string `json:"error"`
+}
+
+// Hotel defines model for Hotel.
+type Hotel struct {
+	// Address Example: 100 Alpine Way
+	Address string `json:"address"`
+
+	// City Example: Lutz
+	City      string             `json:"city"`
+	CreatedAt *time.Time         `json:"created_at,omitempty"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// Name Example: Grand Budapest Hotel
+	Name      string     `json:"name"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// BadRequest defines model for BadRequest.
+type BadRequest = ErrorResponse
+
+// FindHotelsParams defines parameters for FindHotels.
+type FindHotelsParams struct {
+	// Name Hotel name query string
+	Name *string `form:"name,omitempty" json:"name,omitempty"`
+}
+
+// CreateHotelJSONRequestBody defines body for CreateHotel for application/json ContentType.
+type CreateHotelJSONRequestBody = CreateHotelRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// FindHotels Find a hotel based on its name or list all hotels
+	// (GET /api/v1/hotels)
+	FindHotels(w http.ResponseWriter, r *http.Request, params FindHotelsParams)
+	// CreateHotel Register a new hotel
+	// (POST /api/v1/hotels)
+	CreateHotel(w http.ResponseWriter, r *http.Request)
 	// GetHealth Health check probe
 	// (GET /healthz)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -27,6 +85,18 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// FindHotels Find a hotel based on its name or list all hotels
+// (GET /api/v1/hotels)
+func (_ Unimplemented) FindHotels(w http.ResponseWriter, r *http.Request, params FindHotelsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateHotel Register a new hotel
+// (POST /api/v1/hotels)
+func (_ Unimplemented) CreateHotel(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // GetHealth Health check probe
 // (GET /healthz)
@@ -42,6 +112,53 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// FindHotels operation middleware
+func (siw *ServerInterfaceWrapper) FindHotels(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params FindHotelsParams
+
+	// ------------- Optional query parameter "name" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "name", r.URL.Query(), &params.Name, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "name"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FindHotels(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateHotel operation middleware
+func (siw *ServerInterfaceWrapper) CreateHotel(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateHotel(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +290,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/healthz", wrapper.GetHealth)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/hotels", wrapper.FindHotels)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/hotels", wrapper.CreateHotel)
+	})
 
 	return r
 }
@@ -182,13 +305,22 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"ZFLBbhs7DPwVgueNvUguwd7yHoomQA9B01vRA62lvYwlUZBoo1vD/15QLgq0PXHAneHOkLqg5L3idMGZ",
-	"W6hSTDTjhP9HpgxPNSxiHOxUGT5/ePsCT68vsNcKixpHmKUFPXNdBwhUKIitd2HhcOQZqmoCOpNE2kkU",
-	"W6Ex1bAMQHkGMk0SYKd6lHyAKHsOa4gMiTIdOHG2DQ5oYpFxwuf+u/9+sV8j2V5rcjc44Jlru7m+34yb",
-	"Ea8DauFMRXDCh824ecABC9nSPOd2YYq2/HB8YPOihSt58JcZJ/zI9twpOGDlVjQ37sr7cfQSNBvnLqRS",
-	"ooQu3b43t3DBFhZO5KhUH2xyUzcjO3XE3ymVHkuPnnEtjptVyQc3b5K4GaXiZM9JhhPOZHznn/6VXH93",
-	"dPfOwfDqrT8P+sb1LIFBGtwWsHZdO6VEdfUV9y7080GpuuPbmMbVF4zT17/fyCcNFGHmM0ctfjG4cXHA",
-	"U4044WJWpu02Om/RZtPj+Dji9dv15wA=",
+	"tFbdbtw2E32VAb/vUmvJTgMEAnJhO9vYQIIYToC2CAxjlpxdMaZIhhxtrQR694LUem2tN2jcuncUOZyf",
+	"M4dn9F1I13pnyXIU9XcRKHpnI+WPE1SX9LWjyOlLOstk8xK9N1oia2fLL9HZtBdlQy2m1f8DLUUt/lfe",
+	"uy7H01jOQ3DhchNEDMNQCEVRBu2TM1GLc7tGoxWEMTB47I1DBS7AoovaUoyg7RqDRsuw1s7kNETytAmS",
+	"cjgNhExnjsk8KMEH5ymwHstDpQLFvKRbbL0hUYvDqoJj47Ul+A17UQjufdqPHLRdiULczhx6PZNO0Yrs",
+	"jG454Ixxlf3k3JHThVSADqSKVtvXR0WLt6+PXr7MeUrN/TTqu46/PW+sw6rKsSy2NI31NqBVcNIp9Ang",
+	"jNF/UedQbM9E/XlMpNiCvkHhahvYLb6QZDEUYsqRR21LGU0ruvzw4f316fHF8en5pz+u57+fzudv5m8e",
+	"1TQUgpLr6eXgXAsSrXUMCwInZec1KVj00LpA4Ml5Q8ANWtAcQaLHnPoj9zsFj7H2FThC/ix8/Hk2Jcv8",
+	"KNQ15sewdKFNK5EaOWPd0r47Wk1su06rfWb/kGZDITqvnpjUDs45oZ9lV7qs7dKlWFPhOTWEFo6DbDST",
+	"5C4QXM4/foLji3NYugBNKgCUjtKtKfTFlggz2ZC8IQWZSbhGbXChjeYeImGQTQEJCWTXagkL5260XYHR",
+	"S5K9NAQtWlxRS5YPUq2aM3wZLzjZWF8Y5ARNykYUYk0hjlkfHVQHVYLRebLotajFi4Pq4IUohEduMplK",
+	"9LpcH5a5gryzogx2Il9Wz3MlavGrtupsNEmXA7bEFKKoP+9CNeaWIIevHYUetqKh03Heu+tJfdea+/lw",
+	"z5E7duzp8VUxnUVHVfWkIaSZ2vh302gk5bCNjiFgv28qvUeWTWrEiCEYHXkcOV3bYug38AFuaLLASArc",
+	"qBgZKBfyJUBjNk5SXO/ink48GF5i5DpFPnGqf7YxvGc87gg2h46GRz04fLYMNtA/hjofQKCVjkyBFMRO",
+	"Sopx2RnTJ8x+qaofOd9mWz74dZm26XLjGBAs/Tm2IpuUDaHh5tsP38db4rNsIv4lNaeqHxm52xF9d7NP",
+	"KZMaRsbWP0Eo98jfFO6PFNZaEugIIwD9DmBjzZBFDnxwi81vW6Sw3i8P75xEA4rWZJxPugajrShEF4yo",
+	"RcPs67I0ya5xketX1atKDFfDXwMA",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

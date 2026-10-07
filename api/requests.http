@@ -3,7 +3,7 @@
 
 
 ### ==============================================================================
-### 1. Healthcheck Probe
+### Healthcheck Probe
 ### ==============================================================================
 
 # @name HealthCheck
@@ -14,3 +14,50 @@ Accept: application/json
 # Expected:
 # HTTP 200
 # response.body.status == "ok"
+
+### ==============================================================================
+### Create Hotel
+### ==============================================================================
+
+# @name CreateHotel
+POST {{baseUrl}}/api/v1/hotels
+Content-Type: {{contentType}}
+Accept: application/json
+
+{
+  "name": "G1rand Budapest Hotel",
+  "address": "100 Alpine Way",
+  "city": "Lutz"
+}
+
+###
+# Expected:
+# HTTP 200
+# response.body.length > 0
+# response.body[0].name == "Grand Budapest Hotel"
+#
+# The hotel ID is extracted below using JSONPath.
+
+
+### Capture hotelId from FindHotelByName response
+@hotelId = {{ListHotels.response.body.$[0].id}}
+
+### ==============================================================================
+### List Hotels
+### ==============================================================================
+
+# @name ListHotels
+GET {{baseUrl}}/api/v1/hotels
+Accept: application/json
+
+###
+# Expected:
+# HTTP 200
+# response.body.length > 0
+# response.body[0].name == "Grand Budapest Hotel"
+#
+# The hotel ID is extracted below using JSONPath.
+
+
+### Capture hotelId from FindHotelByName response
+@hotelId = {{ListHotels.response.body.$[0].id}}
