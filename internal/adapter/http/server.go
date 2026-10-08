@@ -20,4 +20,4 @@ func NewServer(
 	}
 }
 
-var _ openapi.ServerInterface = (*Server)(nil)
+var _ openapi.StrictServerInterface = (*Server)(nil)

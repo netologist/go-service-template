@@ -3,4 +3,5 @@ output: internal/gen/openapi/api.gen.go
 generate:
   models: true
   chi-server: true
+  strict-server: true
   embedded-spec: true

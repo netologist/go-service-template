@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
+	"github.com/netologist/hotel-booking/internal/gen/openapi"
 )
 
 type healthResponse struct {
@@ -33,24 +34,15 @@ func TestNewHealthCheck(t *testing.T) {
 func TestHealthCheck_GetHealth(t *testing.T) {
 	h := handler.NewHealthCheck()
 
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/healthz", nil)
-	rec := httptest.NewRecorder()
-
-	h.GetHealth(rec, req)
-
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Contains(t, rec.Header().Get("Content-Type"), healthContentTypeHeader)
-
-	var body healthResponse
-	err := json.NewDecoder(rec.Body).Decode(&body)
+	resp, err := h.GetHealth(context.Background(), openapi.GetHealthRequestObject{})
 	require.NoError(t, err)
 
-	assert.Equal(t, healthStatusOK, body.Status)
-	require.NotEmpty(t, body.Timestamp)
-
-	parsedTime, err := time.Parse(time.RFC3339, body.Timestamp)
-	require.NoError(t, err)
-	assert.WithinDuration(t, time.Now().UTC(), parsedTime, maxTimestampDrift)
+	healthResp, ok := resp.(openapi.GetHealth200JSONResponse)
+	require.True(t, ok)
+	require.NotNil(t, healthResp.Status)
+	assert.Equal(t, healthStatusOK, *healthResp.Status)
+	require.NotNil(t, healthResp.Timestamp)
+	assert.WithinDuration(t, time.Now().UTC(), *healthResp.Timestamp, maxTimestampDrift)
 }
 
 func TestHealthCheck_Router_Integration(t *testing.T) {

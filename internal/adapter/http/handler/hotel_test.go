@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
-	customvalidator "github.com/netologist/hotel-booking/internal/adapter/validator"
 	"github.com/netologist/hotel-booking/internal/domain"
 	usecasemocks "github.com/netologist/hotel-booking/internal/gen/mocks/usecase"
 	"github.com/netologist/hotel-booking/internal/gen/openapi"
@@ -38,9 +37,7 @@ const (
 
 func TestNewHotelHandler(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.NewForJsonTag()
-
-	h := handler.NewHotelHandler(mockService, v)
+	h := handler.NewHotelHandler(mockService)
 	require.NotNil(t, h)
 }
 
@@ -48,8 +45,7 @@ func TestHotelHandler_CreateHotel_Success(t *testing.T) {
 	hotelID := uuid.New()
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.NewForJsonTag()
-	h := handler.NewHotelHandler(mockService, v)
+	h := handler.NewHotelHandler(mockService)
 
 	mockService.EXPECT().CreateHotel(mock.Anything, testHotelName, testHotelAddress, testHotelCity).Return(domain.Hotel{
 		ID:        hotelID,
@@ -60,38 +56,27 @@ func TestHotelHandler_CreateHotel_Success(t *testing.T) {
 		UpdatedAt: fixedTime,
 	}, nil).Once()
 
-	req := httptest.NewRequestWithContext(
-		context.Background(),
-		http.MethodPost,
-		"/api/v1/hotels",
-		strings.NewReader(validCreateHotelJSON),
-	)
-	req.Header.Set("Content-Type", contentTypeApplication)
-	rec := httptest.NewRecorder()
-
-	h.CreateHotel(rec, req)
-
-	assert.Equal(t, http.StatusCreated, rec.Code)
-	assert.Contains(t, rec.Header().Get("Content-Type"), contentTypeApplication)
-
-	var got openapi.Hotel
-	err := json.NewDecoder(rec.Body).Decode(&got)
+	resp, err := h.CreateHotel(context.Background(), openapi.CreateHotelRequestObject{
+		Body: &openapi.CreateHotelJSONRequestBody{
+			Name:    testHotelName,
+			Address: testHotelAddress,
+			City:    testHotelCity,
+		},
+	})
 	require.NoError(t, err)
 
-	assert.Equal(t, hotelID, got.Id)
-	assert.Equal(t, testHotelName, got.Name)
-	assert.Equal(t, testHotelAddress, got.Address)
-	assert.Equal(t, testHotelCity, got.City)
-	require.NotNil(t, got.CreatedAt)
-	require.NotNil(t, got.UpdatedAt)
-	assert.True(t, fixedTime.Equal(*got.CreatedAt))
-	assert.True(t, fixedTime.Equal(*got.UpdatedAt))
+	jsonResp, ok := resp.(openapi.CreateHotel201JSONResponse)
+	require.True(t, ok)
+	assert.Equal(t, hotelID, jsonResp.Id)
+	assert.Equal(t, testHotelName, jsonResp.Name)
+	assert.Equal(t, testHotelAddress, jsonResp.Address)
+	assert.Equal(t, testHotelCity, jsonResp.City)
+	assert.True(t, fixedTime.Equal(jsonResp.CreatedAt))
+	assert.True(t, fixedTime.Equal(jsonResp.UpdatedAt))
 }
 
 func TestHotelHandler_CreateHotel_MalformedJSON(t *testing.T) {
-	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.NewForJsonTag()
-	h := handler.NewHotelHandler(mockService, v)
+	router, _ := SetupTestRouterWithMock(t)
 
 	req := httptest.NewRequestWithContext(
 		context.Background(),
@@ -99,15 +84,20 @@ func TestHotelHandler_CreateHotel_MalformedJSON(t *testing.T) {
 		"/api/v1/hotels",
 		strings.NewReader(`{"name": "invalid-json`),
 	)
+	req.Header.Set("Content-Type", contentTypeApplication)
 	rec := httptest.NewRecorder()
 
-	h.CreateHotel(rec, req)
+	router.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	var body map[string]string
-	err := json.NewDecoder(rec.Body).Decode(&body)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "application/problem+json")
+	var prob openapi.Problem
+	err := json.NewDecoder(rec.Body).Decode(&prob)
 	require.NoError(t, err)
-	assert.Equal(t, "malformed JSON body", body["error"])
+	assert.Equal(t, http.StatusBadRequest, prob.Status)
+	assert.Equal(t, "Bad Request", prob.Title)
+	require.NotNil(t, prob.Detail)
+	assert.NotEmpty(t, *prob.Detail)
 }
 
 type validationTestCase struct {
@@ -207,13 +197,11 @@ func boundaryFieldTestCases() []validationTestCase {
 	}
 }
 
-func TestHotelHandler_CreateHotel_ValidationFailure(t *testing.T) {
+func TestHotelRouter_CreateHotel_ValidationFailure(t *testing.T) {
 	testCases := append(missingFieldTestCases(), boundaryFieldTestCases()...)
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := usecasemocks.NewMockHotelService(t)
-			v := customvalidator.NewForJsonTag()
-			h := handler.NewHotelHandler(mockService, v)
+			router, _ := SetupTestRouterWithMock(t)
 
 			payload, err := json.Marshal(tt.body)
 			require.NoError(t, err)
@@ -224,88 +212,105 @@ func TestHotelHandler_CreateHotel_ValidationFailure(t *testing.T) {
 				"/api/v1/hotels",
 				bytes.NewReader(payload),
 			)
+			req.Header.Set("Content-Type", contentTypeApplication)
 			rec := httptest.NewRecorder()
-
-			h.CreateHotel(rec, req)
+			router.ServeHTTP(rec, req)
 
 			assert.Equal(t, http.StatusBadRequest, rec.Code)
+			assert.Contains(t, rec.Header().Get("Content-Type"), "application/problem+json")
 
-			var resp struct {
-				Error  string                       `json:"error"`
-				Fields []customvalidator.FieldError `json:"fields"`
-			}
-			err = json.NewDecoder(rec.Body).Decode(&resp)
+			var prob openapi.Problem
+			err = json.NewDecoder(rec.Body).Decode(&prob)
 			require.NoError(t, err)
-
-			assert.Equal(t, fieldValidationFailed, resp.Error)
-			require.NotEmpty(t, resp.Fields)
-
-			foundField := false
-			for _, f := range resp.Fields {
-				if f.Field == tt.expectedField {
-					foundField = true
-					assert.NotEmpty(t, f.Message)
-				}
-			}
-			assert.True(t, foundField, "expected field error for %s", tt.expectedField)
+			assert.Equal(t, http.StatusBadRequest, prob.Status)
+			assert.Equal(t, "Bad Request", prob.Title)
+			require.NotNil(t, prob.Detail)
+			assert.NotEmpty(t, *prob.Detail)
 		})
 	}
 }
 
 func TestHotelHandler_CreateHotel_ServiceError(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.NewForJsonTag()
-	h := handler.NewHotelHandler(mockService, v)
+	h := handler.NewHotelHandler(mockService)
 
 	serviceErr := errors.New("database connection failed")
 	mockService.EXPECT().
 		CreateHotel(mock.Anything, testHotelName, testHotelAddress, testHotelCity).
 		Return(domain.Hotel{}, serviceErr).
 		Once()
-	req := httptest.NewRequestWithContext(
-		context.Background(),
-		http.MethodPost,
-		"/api/v1/hotels",
-		strings.NewReader(validCreateHotelJSON),
-	)
-	rec := httptest.NewRecorder()
 
-	h.CreateHotel(rec, req)
-
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	var body map[string]string
-	err := json.NewDecoder(rec.Body).Decode(&body)
-	require.NoError(t, err)
-	assert.Equal(t, serviceErr.Error(), body["error"])
-	assert.Equal(t, errInternalServer, body["code"])
+	resp, err := h.CreateHotel(context.Background(), openapi.CreateHotelRequestObject{
+		Body: &openapi.CreateHotelJSONRequestBody{
+			Name:    testHotelName,
+			Address: testHotelAddress,
+			City:    testHotelCity,
+		},
+	})
+	require.ErrorIs(t, err, serviceErr)
+	assert.Nil(t, resp)
 }
 
-func TestHotelHandler_CreateHotel_DomainInvariantError(t *testing.T) {
-	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.NewForJsonTag()
-	h := handler.NewHotelHandler(mockService, v)
+func TestHotelHandler_CreateHotel_DomainAndBusinessErrors(t *testing.T) {
+	testCases := []struct {
+		name           string
+		mockErr        error
+		expectedStatus int
+		expectedTitle  string
+		expectedCode   string
+	}{
+		{
+			name:           "domain_invariant_error",
+			mockErr:        domain.ErrInvalidHotel,
+			expectedStatus: http.StatusBadRequest,
+			expectedTitle:  "Bad Request",
+			expectedCode:   "INVALID_HOTEL",
+		},
+		{
+			name:           "conflict_duplicate_error",
+			mockErr:        domain.ErrHotelAlreadyExists,
+			expectedStatus: http.StatusConflict,
+			expectedTitle:  "Conflict",
+			expectedCode:   "HOTEL_ALREADY_EXISTS",
+		},
+	}
 
-	domainErr := domain.ErrInvalidHotel
-	mockService.EXPECT().
-		CreateHotel(mock.Anything, testHotelName, testHotelAddress, testHotelCity).
-		Return(domain.Hotel{}, domainErr).
-		Once()
-	req := httptest.NewRequestWithContext(
-		context.Background(),
-		http.MethodPost,
-		"/api/v1/hotels",
-		strings.NewReader(validCreateHotelJSON),
-	)
-	rec := httptest.NewRecorder()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockService := usecasemocks.NewMockHotelService(t)
+			h := handler.NewHotelHandler(mockService)
 
-	h.CreateHotel(rec, req)
+			mockService.EXPECT().
+				CreateHotel(mock.Anything, testHotelName, testHotelAddress, testHotelCity).
+				Return(domain.Hotel{}, tc.mockErr).
+				Once()
 
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	var body map[string]string
-	err := json.NewDecoder(rec.Body).Decode(&body)
-	require.NoError(t, err)
-	assert.Equal(t, domainErr.Error(), body["error"])
-	assert.Equal(t, "INVALID_HOTEL", body["code"])
+			resp, err := h.CreateHotel(context.Background(), openapi.CreateHotelRequestObject{
+				Body: &openapi.CreateHotelJSONRequestBody{
+					Name:    testHotelName,
+					Address: testHotelAddress,
+					City:    testHotelCity,
+				},
+			})
+			require.NoError(t, err)
+
+			var prob openapi.Problem
+			switch r := resp.(type) {
+			case openapi.CreateHotel400ApplicationProblemPlusJSONResponse:
+				prob = openapi.Problem(r.BadRequestApplicationProblemPlusJSONResponse)
+			case openapi.CreateHotel409ApplicationProblemPlusJSONResponse:
+				prob = openapi.Problem(r.ConflictApplicationProblemPlusJSONResponse)
+			default:
+				t.Fatalf("unexpected response type: %T", resp)
+			}
+			assert.Equal(t, tc.expectedStatus, prob.Status)
+			assert.Equal(t, tc.expectedTitle, prob.Title)
+			require.NotNil(t, prob.Detail)
+			assert.Equal(t, tc.mockErr.Error(), *prob.Detail)
+			require.NotNil(t, prob.Code)
+			assert.Equal(t, tc.expectedCode, *prob.Code)
+		})
+	}
 }
 
 func TestHotelHandler_FindHotels_SuccessWithHotels(t *testing.T) {
@@ -314,8 +319,7 @@ func TestHotelHandler_FindHotels_SuccessWithHotels(t *testing.T) {
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
 
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.NewForJsonTag()
-	h := handler.NewHotelHandler(mockService, v)
+	h := handler.NewHotelHandler(mockService)
 
 	expectedHotels := []domain.Hotel{
 		{
@@ -338,73 +342,49 @@ func TestHotelHandler_FindHotels_SuccessWithHotels(t *testing.T) {
 
 	mockService.EXPECT().FindHotels(mock.Anything).Return(expectedHotels, nil).Once()
 
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/hotels", nil)
-	rec := httptest.NewRecorder()
-
-	h.FindHotels(rec, req, openapi.FindHotelsParams{})
-
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Contains(t, rec.Header().Get("Content-Type"), contentTypeApplication)
-
-	var got []openapi.Hotel
-	err := json.NewDecoder(rec.Body).Decode(&got)
+	resp, err := h.FindHotels(context.Background(), openapi.FindHotelsRequestObject{})
 	require.NoError(t, err)
 
-	require.Len(t, got, 2)
-	assert.Equal(t, hotel1ID, got[0].Id)
-	assert.Equal(t, "Hotel One", got[0].Name)
-	assert.Equal(t, "123 First St", got[0].Address)
-	assert.Equal(t, "Miami", got[0].City)
-	require.NotNil(t, got[0].CreatedAt)
-	assert.True(t, fixedTime.Equal(*got[0].CreatedAt))
+	hotelsResp, ok := resp.(openapi.FindHotels200JSONResponse)
+	require.True(t, ok)
+	require.Len(t, hotelsResp, 2)
+	assert.Equal(t, hotel1ID, hotelsResp[0].Id)
+	assert.Equal(t, "Hotel One", hotelsResp[0].Name)
+	assert.Equal(t, "123 First St", hotelsResp[0].Address)
+	assert.Equal(t, "Miami", hotelsResp[0].City)
+	assert.True(t, fixedTime.Equal(hotelsResp[0].CreatedAt))
 
-	assert.Equal(t, hotel2ID, got[1].Id)
-	assert.Equal(t, "Hotel Two", got[1].Name)
-	assert.Equal(t, "456 Second St", got[1].Address)
-	assert.Equal(t, "Orlando", got[1].City)
-	require.NotNil(t, got[1].CreatedAt)
-	assert.True(t, fixedTime.Equal(*got[1].CreatedAt))
+	assert.Equal(t, hotel2ID, hotelsResp[1].Id)
+	assert.Equal(t, "Hotel Two", hotelsResp[1].Name)
+	assert.Equal(t, "456 Second St", hotelsResp[1].Address)
+	assert.Equal(t, "Orlando", hotelsResp[1].City)
+	assert.True(t, fixedTime.Equal(hotelsResp[1].CreatedAt))
 }
 
 func TestHotelHandler_FindHotels_EmptyList(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.NewForJsonTag()
-	h := handler.NewHotelHandler(mockService, v)
+	h := handler.NewHotelHandler(mockService)
 
 	mockService.EXPECT().FindHotels(mock.Anything).Return([]domain.Hotel{}, nil).Once()
 
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/hotels", nil)
-	rec := httptest.NewRecorder()
-
-	h.FindHotels(rec, req, openapi.FindHotelsParams{})
-
-	assert.Equal(t, http.StatusOK, rec.Code)
-
-	var got []openapi.Hotel
-	err := json.NewDecoder(rec.Body).Decode(&got)
+	resp, err := h.FindHotels(context.Background(), openapi.FindHotelsRequestObject{})
 	require.NoError(t, err)
-	assert.Empty(t, got)
+
+	hotelsResp, ok := resp.(openapi.FindHotels200JSONResponse)
+	require.True(t, ok)
+	assert.Empty(t, hotelsResp)
 }
 
 func TestHotelHandler_FindHotels_ServiceError(t *testing.T) {
 	mockService := usecasemocks.NewMockHotelService(t)
-	v := customvalidator.NewForJsonTag()
-	h := handler.NewHotelHandler(mockService, v)
+	h := handler.NewHotelHandler(mockService)
 
 	serviceErr := errors.New("failed to retrieve hotels")
 	mockService.EXPECT().FindHotels(mock.Anything).Return(nil, serviceErr).Once()
 
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/hotels", nil)
-	rec := httptest.NewRecorder()
-
-	h.FindHotels(rec, req, openapi.FindHotelsParams{})
-
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	var body map[string]string
-	err := json.NewDecoder(rec.Body).Decode(&body)
-	require.NoError(t, err)
-	assert.Equal(t, serviceErr.Error(), body["error"])
-	assert.Equal(t, errInternalServer, body["code"])
+	resp, err := h.FindHotels(context.Background(), openapi.FindHotelsRequestObject{})
+	require.ErrorIs(t, err, serviceErr)
+	assert.Nil(t, resp)
 }
 
 func TestHotelRouter_Integration_CreateHotel(t *testing.T) {

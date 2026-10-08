@@ -14,7 +14,7 @@ import (
 	httpadapter "github.com/netologist/hotel-booking/internal/adapter/http"
 	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
 	"github.com/netologist/hotel-booking/internal/adapter/postgres"
-	"github.com/netologist/hotel-booking/internal/adapter/validator"
+
 	"github.com/netologist/hotel-booking/internal/config"
 	"github.com/netologist/hotel-booking/internal/usecase"
 )
@@ -45,12 +45,11 @@ func main() {
 }
 
 func runServer(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config) error {
-	appValidator := validator.NewForJsonTag()
 	hotelRepo := postgres.NewHotelRepository(pool)
 	hotelService := usecase.NewHotelService(hotelRepo)
 	handlers := httpadapter.NewServer(
 		handler.NewHealthCheck(),
-		handler.NewHotelHandler(hotelService, appValidator),
+		handler.NewHotelHandler(hotelService),
 	)
 	router := httpadapter.NewRouter(handlers)
 
