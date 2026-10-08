@@ -51,13 +51,21 @@ run = "go tool gotestsum --format testname -- -race -covermode=atomic -coverprof
 [tasks."test:coverage:html"]
 description = "Run unit tests and open interactive HTML coverage report"
 run = "go tool gotestsum --format testname -- -race -covermode=atomic -coverprofile=coverage.out $(go list ./internal/... | grep -v '/internal/gen') && go tool cover -html=coverage.out"
-[tasks."test:e2e"]
-description = "Run Ginkgo & Gomega E2E test suite"
-run = "go test -v -count=1 ./tests/e2e/..."
 
-[tasks."test:e2e:docker"]
-description = "Run containerized E2E test suite with Docker Compose"
-run = "docker compose -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from e2e"
+[tasks."test:e2e"]
+description = "Start PostgreSQL, apply migrations, run the server locally and execute the Ginkgo & Gomega E2E suite"
+run = [
+  { task = "docker:compose-up" },
+  { task = "migrate:up" },
+  '''
+BIN_DIR=$(mktemp -d)
+go build -o "$BIN_DIR/server" ./cmd/server
+"$BIN_DIR/server" &
+SERVER_PID=$!
+trap 'kill "$SERVER_PID" 2>/dev/null; rm -rf "$BIN_DIR"' EXIT
+go test -v -count=1 ./tests/e2e/...
+''',
+]
 
 [tasks."generate:openapi"]
 description = "Generate Go code from OpenAPI specification"
@@ -85,7 +93,7 @@ run = "docker build -t hotel-booking:latest ."
 
 [tasks."docker:compose-up"]
 description = "Start local dependencies (PostgreSQL) using Docker Compose"
-run = "docker compose up -d"
+run = "docker compose up -d --wait"
 
 [tasks."docker:compose-down"]
 description = "Stop and clean local dependencies using Docker Compose"
@@ -94,9 +102,9 @@ run = "docker compose down -v"
 [tasks.psql]
 run = "docker compose exec postgres psql -U postgres -d hotel_booking"
 
-[tasks."mocks:generate"]
+[tasks."generate:mocks"]
 description = "Generate mocks with mockery"
-alias = "generate:mocks"
+alias = "mocks:generate"
 run = "go tool mockery"
 sources = [".mockery.yml", "internal/**/*.go"]
 outputs = ["internal/gen/mocks/**/*.go"]

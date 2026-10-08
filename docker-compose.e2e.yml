@@ -1,9 +1,7 @@
 services:
+  # Runs goose from the API image itself; no separate migration image exists.
   migration:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_NAME:-netologist/hotel-booking}:${IMAGE_TAG:-latest}
-    build:
-      context: .
-      dockerfile: Dockerfile
     entrypoint: ["sh", "-c", "goose -dir /database/migrations postgres \"$$DATABASE_URL\" up && tail -f /dev/null"]
     environment:
       DATABASE_URL: postgres://postgres:postgresPassword123@postgres:5432/hotel_booking?sslmode=disable
@@ -40,8 +38,9 @@ services:
       api:
         condition: service_started
 
+  # Test runner is built locally only; never pulled from or pushed to a registry.
   e2e:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAME:-netologist/hotel-booking}-e2e:${IMAGE_TAG:-latest}
+    image: hotel-booking-e2e:local
     build:
       context: .
       dockerfile: Dockerfile.e2e

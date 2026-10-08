@@ -65,7 +65,7 @@ jobs:
       - name: Ensure mocks are in sync
         run: |
           if ! git diff --exit-code internal/gen/mocks; then
-            echo "Error: Generated mocks are out of sync. Run 'mise run mocks:generate' and commit the changes."
+            echo "Error: Generated mocks are out of sync. Run 'mise run generate:mocks' and commit the changes."
             exit 1
           fi
 
@@ -170,20 +170,12 @@ jobs:
           path: coverage.out
           retention-days: 7
 
-  build-images:
-    name: Build & Push Images (${{ matrix.service.name }})
+  build-api:
+    name: Build, Scan & Push API Image
     runs-on: ubuntu-latest
     needs: [validate-spec, validate-mocks, validate-sqlc, security, lint, test]
-    strategy:
-      fail-fast: true
-      matrix:
-        service:
-          - name: api
-            image_suffix: ""
-            dockerfile: Dockerfile
-          - name: e2e
-            image_suffix: "-e2e"
-            dockerfile: Dockerfile.e2e
+    outputs:
+      image_tag: ${{ steps.sha.outputs.image_tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -191,42 +183,48 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Extract Docker metadata (SHA and branch tags, NO latest)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.service.image_suffix }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=sha,prefix=sha-,format=short
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
 
-      - name: Build and Push Docker image (${{ matrix.service.name }})
+      # Build once into the runner's Docker daemon; the exact same local image is scanned and then pushed.
+      - name: Build API image locally (not pushed)
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./${{ matrix.service.dockerfile }}
-          push: true
+          file: ./Dockerfile
+          load: true
+          push: false
+          provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.service.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
 
-  scan-api:
-    name: Trivy Security Scan (API Image)
-    runs-on: ubuntu-latest
-    needs: [build-images]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Resolve immutable SHA tag
+        id: sha
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          IMAGE_REF=$(printf '%s\n' "$TAGS" | grep -m1 ':sha-')
+          echo "image_ref=$IMAGE_REF" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_REF##*:}" >> "$GITHUB_OUTPUT"
+
+      - name: "Trivy Security Gate: Scan local API image before push"
+        env:
+          IMAGE_REF: ${{ steps.sha.outputs.image_ref }}
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            ghcr.io/aquasecurity/trivy:latest \
+            image --image-src docker --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH "$IMAGE_REF"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -235,21 +233,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set short SHA tag
-        id: vars
-        run: echo "short_sha=sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: "Trivy Security Gate: Scan API image for vulnerabilities"
-        uses: docker://ghcr.io/aquasecurity/trivy:latest
-        with:
-          args: image --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.short_sha }}
+      - name: Push verified API image to GHCR
         env:
-          TRIVY_USERNAME: ${{ github.actor }}
-          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          while IFS= read -r TAG; do
+            [ -n "$TAG" ] || continue
+            docker push "$TAG"
+          done <<< "$TAGS"
+
   e2e:
     name: End-to-End Tests (Docker Compose)
     runs-on: ubuntu-latest
-    needs: [scan-api]
+    needs: [build-api]
+    env:
+      IMAGE_TAG: ${{ needs.build-api.outputs.image_tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -261,19 +259,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set short SHA tag
-        id: vars
-        run: echo "short_sha=sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Pull verified API image from GHCR
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml pull api
 
-      - name: Pull pre-built images from GHCR
-        env:
-          IMAGE_TAG: ${{ steps.vars.outputs.short_sha }}
-        run: |
-          docker compose -f docker-compose.yml -f docker-compose.e2e.yml pull api migration e2e
+      - name: Build E2E test image locally (never pushed)
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml build e2e
 
-      - name: Run E2E test suite using pulled images
-        env:
-          IMAGE_TAG: ${{ steps.vars.outputs.short_sha }}
+      - name: Run E2E test suite against verified API image
         run: |
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml up --no-build --abort-on-container-exit --exit-code-from e2e
 
@@ -282,14 +274,11 @@ jobs:
         run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml down -v
 
   tag-latest:
-    name: Tag & Promote Verified Images to Latest
+    name: Promote Verified API Image to Latest
     runs-on: ubuntu-latest
-    needs: [e2e]
+    needs: [build-api, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -297,17 +286,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set short SHA tag
-        id: vars
-        run: echo "short_sha=sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Tag and push latest for verified images
+      - name: Tag and push latest for verified API image
+        env:
+          IMAGE_TAG: ${{ needs.build-api.outputs.image_tag }}
         run: |
-          for SUFFIX in "" "-e2e"; do
-            SRC="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${SUFFIX}:${{ steps.vars.outputs.short_sha }}"
-            DST="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${SUFFIX}:latest"
-            echo "Promoting $SRC to $DST..."
-            docker pull "$SRC"
-            docker tag "$SRC" "$DST"
-            docker push "$DST"
-          done
+          SRC="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+          DST="${REGISTRY}/${IMAGE_NAME}:latest"
+          echo "Promoting $SRC to $DST..."
+          docker pull "$SRC"
+          docker tag "$SRC" "$DST"
+          docker push "$DST"
