@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -63,24 +62,22 @@ func TestHotelRepository_List_Success(t *testing.T) {
 	hotel1ID := uuid.New()
 	hotel2ID := uuid.New()
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
-	pgTime := pgtype.Timestamptz{Time: fixedTime, Valid: true}
-
 	rows := []sqlc.Hotel{
 		{
-			ID:        pgtype.UUID{Bytes: hotel1ID, Valid: true},
+			ID:        hotel1ID,
 			Name:      "Hotel One",
 			Address:   "123 First St",
 			City:      "Miami",
-			CreatedAt: pgTime,
-			UpdatedAt: pgTime,
+			CreatedAt: fixedTime,
+			UpdatedAt: fixedTime,
 		},
 		{
-			ID:        pgtype.UUID{Bytes: hotel2ID, Valid: true},
+			ID:        hotel2ID,
 			Name:      "Hotel Two",
 			Address:   "456 Second St",
 			City:      "Orlando",
-			CreatedAt: pgTime,
-			UpdatedAt: pgTime,
+			CreatedAt: fixedTime,
+			UpdatedAt: fixedTime,
 		},
 	}
 
@@ -94,15 +91,13 @@ func TestHotelRepository_List_Success(t *testing.T) {
 	assert.Equal(t, "Hotel One", hotels[0].Name)
 	assert.Equal(t, "123 First St", hotels[0].Address)
 	assert.Equal(t, "Miami", hotels[0].City)
-	require.NotNil(t, hotels[0].CreatedAt)
-	assert.True(t, fixedTime.Equal(*hotels[0].CreatedAt))
+	assert.True(t, fixedTime.Equal(hotels[0].CreatedAt))
 
 	assert.Equal(t, hotel2ID, hotels[1].ID)
 	assert.Equal(t, "Hotel Two", hotels[1].Name)
 	assert.Equal(t, "456 Second St", hotels[1].Address)
 	assert.Equal(t, "Orlando", hotels[1].City)
-	require.NotNil(t, hotels[1].CreatedAt)
-	assert.True(t, fixedTime.Equal(*hotels[1].CreatedAt))
+	assert.True(t, fixedTime.Equal(hotels[1].CreatedAt))
 
 	q.AssertExpectations(t)
 }
@@ -143,9 +138,7 @@ func TestHotelRepository_Create_Success(t *testing.T) {
 
 	hotelID := uuid.New()
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
-	pgTime := pgtype.Timestamptz{Time: fixedTime, Valid: true}
-
-	input := &domain.Hotel{
+	input := domain.Hotel{
 		ID:      hotelID,
 		Name:    testHotelName,
 		Address: testHotelAddress,
@@ -153,21 +146,20 @@ func TestHotelRepository_Create_Success(t *testing.T) {
 	}
 
 	expectedArg := sqlc.CreateHotelParams{
-		ID:      pgtype.UUID{Bytes: hotelID, Valid: true},
+		ID:      hotelID,
 		Name:    testHotelName,
 		Address: testHotelAddress,
 		City:    testHotelCity,
 	}
 
 	createdRow := sqlc.Hotel{
-		ID:        pgtype.UUID{Bytes: hotelID, Valid: true},
+		ID:        hotelID,
 		Name:      testHotelName,
 		Address:   testHotelAddress,
 		City:      testHotelCity,
-		CreatedAt: pgTime,
-		UpdatedAt: pgTime,
+		CreatedAt: fixedTime,
+		UpdatedAt: fixedTime,
 	}
-
 	q.On("CreateHotel", ctx, expectedArg).Return(createdRow, nil).Once()
 
 	res, err := repo.Create(ctx, input)
@@ -178,10 +170,8 @@ func TestHotelRepository_Create_Success(t *testing.T) {
 	assert.Equal(t, testHotelName, res.Name)
 	assert.Equal(t, testHotelAddress, res.Address)
 	assert.Equal(t, testHotelCity, res.City)
-	require.NotNil(t, res.CreatedAt)
-	require.NotNil(t, res.UpdatedAt)
-	assert.True(t, fixedTime.Equal(*res.CreatedAt))
-	assert.True(t, fixedTime.Equal(*res.UpdatedAt))
+	assert.True(t, fixedTime.Equal(res.CreatedAt))
+	assert.True(t, fixedTime.Equal(res.UpdatedAt))
 
 	q.AssertExpectations(t)
 }
@@ -193,7 +183,7 @@ func TestHotelRepository_Create_Error(t *testing.T) {
 	dbErr := errors.New("unique constraint violation")
 
 	hotelID := uuid.New()
-	input := &domain.Hotel{
+	input := domain.Hotel{
 		ID:      hotelID,
 		Name:    testHotelName,
 		Address: testHotelAddress,
@@ -201,17 +191,16 @@ func TestHotelRepository_Create_Error(t *testing.T) {
 	}
 
 	expectedArg := sqlc.CreateHotelParams{
-		ID:      pgtype.UUID{Bytes: hotelID, Valid: true},
+		ID:      hotelID,
 		Name:    testHotelName,
 		Address: testHotelAddress,
 		City:    testHotelCity,
 	}
-
 	q.On("CreateHotel", ctx, expectedArg).Return(sqlc.Hotel{}, dbErr).Once()
 
 	res, err := repo.Create(ctx, input)
 	require.ErrorIs(t, err, dbErr)
-	assert.Nil(t, res)
+	assert.Zero(t, res)
 
 	q.AssertExpectations(t)
 }
@@ -219,17 +208,14 @@ func TestHotelRepository_Create_Error(t *testing.T) {
 func TestToDomainHotel(t *testing.T) {
 	hotelID := uuid.New()
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
-	pgTime := pgtype.Timestamptz{Time: fixedTime, Valid: true}
-
 	row := sqlc.Hotel{
-		ID:        pgtype.UUID{Bytes: hotelID, Valid: true},
+		ID:        hotelID,
 		Name:      testHotelName,
 		Address:   testHotelAddress,
 		City:      testHotelCity,
-		CreatedAt: pgTime,
-		UpdatedAt: pgTime,
+		CreatedAt: fixedTime,
+		UpdatedAt: fixedTime,
 	}
-
 	got := toDomainHotel(row)
 	require.NotNil(t, got)
 
@@ -237,8 +223,6 @@ func TestToDomainHotel(t *testing.T) {
 	assert.Equal(t, testHotelName, got.Name)
 	assert.Equal(t, testHotelAddress, got.Address)
 	assert.Equal(t, testHotelCity, got.City)
-	require.NotNil(t, got.CreatedAt)
-	require.NotNil(t, got.UpdatedAt)
-	assert.True(t, fixedTime.Equal(*got.CreatedAt))
-	assert.True(t, fixedTime.Equal(*got.UpdatedAt))
+	assert.True(t, fixedTime.Equal(got.CreatedAt))
+	assert.True(t, fixedTime.Equal(got.UpdatedAt))
 }

@@ -20,6 +20,9 @@ type Config struct {
 	// HTTP Server settings (defaults from cmd/server/main.go)
 	ServerShutdownTimeout   time.Duration `envconfig:"SERVER_SHUTDOWN_TIMEOUT" default:"10s" validate:"required"`
 	ServerReadHeaderTimeout time.Duration `envconfig:"SERVER_READ_HEADER_TIMEOUT" default:"30s" validate:"required"`
+	ServerReadTimeout       time.Duration `envconfig:"SERVER_READ_TIMEOUT" default:"30s" validate:"required"`
+	ServerWriteTimeout      time.Duration `envconfig:"SERVER_WRITE_TIMEOUT" default:"30s" validate:"required"`
+	ServerIdleTimeout       time.Duration `envconfig:"SERVER_IDLE_TIMEOUT" default:"2m" validate:"required"`
 
 	// PostgreSQL pool settings (defaults from internal/adapter/postgres/postgres.go)
 	DBMaxConns          int32         `envconfig:"DB_MAX_CONNS" default:"25" validate:"required,min=1"`

@@ -3,9 +3,6 @@ package postgres
 import (
 	"context"
 
-	"github.com/google/uuid"
-
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/netologist/hotel-booking/internal/domain"
 	"github.com/netologist/hotel-booking/internal/gen/sqlc"
@@ -26,39 +23,39 @@ type hotelRepository struct {
 	queries sqlc.Querier
 }
 
-func (h *hotelRepository) List(ctx context.Context) ([]*domain.Hotel, error) {
+func (h *hotelRepository) List(ctx context.Context) ([]domain.Hotel, error) {
 	rows, err := h.queries.ListHotels(ctx)
 	if err != nil {
 		return nil, err
 	}
-	hotels := make([]*domain.Hotel, len(rows))
+	hotels := make([]domain.Hotel, len(rows))
 	for i, r := range rows {
 		hotels[i] = toDomainHotel(r)
 	}
 	return hotels, nil
 }
 
-func (h *hotelRepository) Create(ctx context.Context, hotel *domain.Hotel) (*domain.Hotel, error) {
+func (h *hotelRepository) Create(ctx context.Context, hotel domain.Hotel) (domain.Hotel, error) {
 	row, err := h.queries.CreateHotel(ctx, sqlc.CreateHotelParams{
-		ID:      pgtype.UUID{Bytes: hotel.ID, Valid: true},
+		ID:      hotel.ID,
 		Name:    hotel.Name,
 		Address: hotel.Address,
 		City:    hotel.City,
 	})
 	if err != nil {
-		return nil, err
+		return domain.Hotel{}, err
 	}
 	return toDomainHotel(row), nil
 }
 
 // Model mappers
-func toDomainHotel(row sqlc.Hotel) *domain.Hotel {
-	return &domain.Hotel{
-		ID:        uuid.UUID(row.ID.Bytes),
+func toDomainHotel(row sqlc.Hotel) domain.Hotel {
+	return domain.Hotel{
+		ID:        row.ID,
 		Name:      row.Name,
 		Address:   row.Address,
 		City:      row.City,
-		CreatedAt: &row.CreatedAt.Time,
-		UpdatedAt: &row.UpdatedAt.Time,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
 	}
 }

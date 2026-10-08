@@ -18,9 +18,9 @@ import (
 
 	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
 	customvalidator "github.com/netologist/hotel-booking/internal/adapter/validator"
+	"github.com/netologist/hotel-booking/internal/domain"
 	usecasemocks "github.com/netologist/hotel-booking/internal/gen/mocks/usecase"
 	"github.com/netologist/hotel-booking/internal/gen/openapi"
-	"github.com/netologist/hotel-booking/internal/usecase"
 )
 
 const (
@@ -51,19 +51,13 @@ func TestHotelHandler_CreateHotel_Success(t *testing.T) {
 	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
-	mockService.EXPECT().CreateHotel(mock.Anything, usecase.CreateHotelInput{
-		Name:    testHotelName,
-		Address: testHotelAddress,
-		City:    testHotelCity,
-	}).Return(usecase.CreateHotelOutput{
-		HotelOutput: usecase.HotelOutput{
-			ID:        hotelID,
-			Name:      testHotelName,
-			Address:   testHotelAddress,
-			City:      testHotelCity,
-			CreatedAt: &fixedTime,
-			UpdatedAt: &fixedTime,
-		},
+	mockService.EXPECT().CreateHotel(mock.Anything, testHotelName, testHotelAddress, testHotelCity).Return(domain.Hotel{
+		ID:        hotelID,
+		Name:      testHotelName,
+		Address:   testHotelAddress,
+		City:      testHotelCity,
+		CreatedAt: fixedTime,
+		UpdatedAt: fixedTime,
 	}, nil).Once()
 
 	req := httptest.NewRequestWithContext(
@@ -264,12 +258,10 @@ func TestHotelHandler_CreateHotel_ServiceError(t *testing.T) {
 	h := handler.NewHotelHandler(mockService, v)
 
 	serviceErr := errors.New("database connection failed")
-	mockService.EXPECT().CreateHotel(mock.Anything, usecase.CreateHotelInput{
-		Name:    testHotelName,
-		Address: testHotelAddress,
-		City:    testHotelCity,
-	}).Return(usecase.CreateHotelOutput{}, serviceErr).Once()
-
+	mockService.EXPECT().
+		CreateHotel(mock.Anything, testHotelName, testHotelAddress, testHotelCity).
+		Return(domain.Hotel{}, serviceErr).
+		Once()
 	req := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
@@ -297,22 +289,22 @@ func TestHotelHandler_FindHotels_SuccessWithHotels(t *testing.T) {
 	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
-	expectedHotels := []usecase.HotelOutput{
+	expectedHotels := []domain.Hotel{
 		{
 			ID:        hotel1ID,
 			Name:      "Hotel One",
 			Address:   "123 First St",
 			City:      "Miami",
-			CreatedAt: &fixedTime,
-			UpdatedAt: &fixedTime,
+			CreatedAt: fixedTime,
+			UpdatedAt: fixedTime,
 		},
 		{
 			ID:        hotel2ID,
 			Name:      "Hotel Two",
 			Address:   "456 Second St",
 			City:      "Orlando",
-			CreatedAt: &fixedTime,
-			UpdatedAt: &fixedTime,
+			CreatedAt: fixedTime,
+			UpdatedAt: fixedTime,
 		},
 	}
 
@@ -351,7 +343,7 @@ func TestHotelHandler_FindHotels_EmptyList(t *testing.T) {
 	v := customvalidator.NewForJsonTag()
 	h := handler.NewHotelHandler(mockService, v)
 
-	mockService.EXPECT().FindHotels(mock.Anything).Return([]usecase.HotelOutput{}, nil).Once()
+	mockService.EXPECT().FindHotels(mock.Anything).Return([]domain.Hotel{}, nil).Once()
 
 	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/hotels", nil)
 	rec := httptest.NewRecorder()
@@ -392,19 +384,13 @@ func TestHotelRouter_Integration_CreateHotel(t *testing.T) {
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
 	router, mockService := SetupTestRouterWithMock(t)
 
-	mockService.EXPECT().CreateHotel(mock.Anything, usecase.CreateHotelInput{
-		Name:    testHotelName,
-		Address: testHotelAddress,
-		City:    testHotelCity,
-	}).Return(usecase.CreateHotelOutput{
-		HotelOutput: usecase.HotelOutput{
-			ID:        hotelID,
-			Name:      testHotelName,
-			Address:   testHotelAddress,
-			City:      testHotelCity,
-			CreatedAt: &fixedTime,
-			UpdatedAt: &fixedTime,
-		},
+	mockService.EXPECT().CreateHotel(mock.Anything, testHotelName, testHotelAddress, testHotelCity).Return(domain.Hotel{
+		ID:        hotelID,
+		Name:      testHotelName,
+		Address:   testHotelAddress,
+		City:      testHotelCity,
+		CreatedAt: fixedTime,
+		UpdatedAt: fixedTime,
 	}, nil).Once()
 
 	req := httptest.NewRequestWithContext(
@@ -431,14 +417,14 @@ func TestHotelRouter_Integration_FindHotels(t *testing.T) {
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
 	router, mockService := SetupTestRouterWithMock(t)
 
-	mockService.EXPECT().FindHotels(mock.Anything).Return([]usecase.HotelOutput{
+	mockService.EXPECT().FindHotels(mock.Anything).Return([]domain.Hotel{
 		{
 			ID:        hotelID,
 			Name:      testHotelName,
 			Address:   testHotelAddress,
 			City:      testHotelCity,
-			CreatedAt: &fixedTime,
-			UpdatedAt: &fixedTime,
+			CreatedAt: fixedTime,
+			UpdatedAt: fixedTime,
 		},
 	}, nil).Once()
 

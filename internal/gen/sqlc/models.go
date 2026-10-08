@@ -5,14 +5,16 @@
 package sqlc
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Hotel struct {
-	ID        pgtype.UUID        `json:"id"`
-	Name      string             `json:"name"`
-	Address   string             `json:"address"`
-	City      string             `json:"city"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID        uuid.UUID
+	Name      string
+	Address   string
+	City      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

@@ -56,8 +56,11 @@ func runServer(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config) erro
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),
-		ReadHeaderTimeout: cfg.ServerReadHeaderTimeout,
 		Handler:           router,
+		ReadHeaderTimeout: cfg.ServerReadHeaderTimeout,
+		ReadTimeout:       cfg.ServerReadTimeout,
+		WriteTimeout:      cfg.ServerWriteTimeout,
+		IdleTimeout:       cfg.ServerIdleTimeout,
 	}
 
 	serverErrCh := make(chan error, 1)

@@ -8,7 +8,7 @@ package sqlc
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createHotel = `-- name: CreateHotel :one
@@ -18,10 +18,10 @@ RETURNING id, name, address, city, created_at, updated_at
 `
 
 type CreateHotelParams struct {
-	ID      pgtype.UUID `json:"id"`
-	Name    string      `json:"name"`
-	Address string      `json:"address"`
-	City    string      `json:"city"`
+	ID      uuid.UUID
+	Name    string
+	Address string
+	City    string
 }
 
 func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error) {

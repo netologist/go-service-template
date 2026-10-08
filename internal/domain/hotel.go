@@ -13,12 +13,12 @@ type Hotel struct {
 	Name      string
 	Address   string
 	City      string
-	CreatedAt *time.Time
-	UpdatedAt *time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // HotelRepository interface
 type HotelRepository interface {
-	List(ctx context.Context) ([]*Hotel, error)
-	Create(ctx context.Context, hotel *Hotel) (*Hotel, error)
+	List(ctx context.Context) ([]Hotel, error)
+	Create(ctx context.Context, hotel Hotel) (Hotel, error)
 }

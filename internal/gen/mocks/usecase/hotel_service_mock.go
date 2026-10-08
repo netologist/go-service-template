@@ -7,7 +7,7 @@ package usecasemocks
 import (
 	"context"
 
-	"github.com/netologist/hotel-booking/internal/usecase"
+	"github.com/netologist/hotel-booking/internal/domain"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -48,25 +48,25 @@ func (_m *MockHotelService) EXPECT() *MockHotelService_Expecter {
 }
 
 // CreateHotel provides a mock function for the type MockHotelService
-func (_mock *MockHotelService) CreateHotel(ctx context.Context, input usecase.CreateHotelInput) (usecase.CreateHotelOutput, error) {
-	ret := _mock.Called(ctx, input)
+func (_mock *MockHotelService) CreateHotel(ctx context.Context, name string, address string, city string) (domain.Hotel, error) {
+	ret := _mock.Called(ctx, name, address, city)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateHotel")
 	}
 
-	var r0 usecase.CreateHotelOutput
+	var r0 domain.Hotel
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, usecase.CreateHotelInput) (usecase.CreateHotelOutput, error)); ok {
-		return returnFunc(ctx, input)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) (domain.Hotel, error)); ok {
+		return returnFunc(ctx, name, address, city)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, usecase.CreateHotelInput) usecase.CreateHotelOutput); ok {
-		r0 = returnFunc(ctx, input)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) domain.Hotel); ok {
+		r0 = returnFunc(ctx, name, address, city)
 	} else {
-		r0 = ret.Get(0).(usecase.CreateHotelOutput)
+		r0 = ret.Get(0).(domain.Hotel)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, usecase.CreateHotelInput) error); ok {
-		r1 = returnFunc(ctx, input)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = returnFunc(ctx, name, address, city)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -80,57 +80,69 @@ type MockHotelService_CreateHotel_Call struct {
 
 // CreateHotel is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input usecase.CreateHotelInput
-func (_e *MockHotelService_Expecter) CreateHotel(ctx any, input any) *MockHotelService_CreateHotel_Call {
-	return &MockHotelService_CreateHotel_Call{Call: _e.mock.On("CreateHotel", ctx, input)}
+//   - name string
+//   - address string
+//   - city string
+func (_e *MockHotelService_Expecter) CreateHotel(ctx any, name any, address any, city any) *MockHotelService_CreateHotel_Call {
+	return &MockHotelService_CreateHotel_Call{Call: _e.mock.On("CreateHotel", ctx, name, address, city)}
 }
 
-func (_c *MockHotelService_CreateHotel_Call) Run(run func(ctx context.Context, input usecase.CreateHotelInput)) *MockHotelService_CreateHotel_Call {
+func (_c *MockHotelService_CreateHotel_Call) Run(run func(ctx context.Context, name string, address string, city string)) *MockHotelService_CreateHotel_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 usecase.CreateHotelInput
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(usecase.CreateHotelInput)
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
+			arg3,
 		)
 	})
 	return _c
 }
 
-func (_c *MockHotelService_CreateHotel_Call) Return(createHotelOutput usecase.CreateHotelOutput, err error) *MockHotelService_CreateHotel_Call {
-	_c.Call.Return(createHotelOutput, err)
+func (_c *MockHotelService_CreateHotel_Call) Return(hotel domain.Hotel, err error) *MockHotelService_CreateHotel_Call {
+	_c.Call.Return(hotel, err)
 	return _c
 }
 
-func (_c *MockHotelService_CreateHotel_Call) RunAndReturn(run func(ctx context.Context, input usecase.CreateHotelInput) (usecase.CreateHotelOutput, error)) *MockHotelService_CreateHotel_Call {
+func (_c *MockHotelService_CreateHotel_Call) RunAndReturn(run func(ctx context.Context, name string, address string, city string) (domain.Hotel, error)) *MockHotelService_CreateHotel_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // FindHotels provides a mock function for the type MockHotelService
-func (_mock *MockHotelService) FindHotels(ctx context.Context) ([]usecase.HotelOutput, error) {
+func (_mock *MockHotelService) FindHotels(ctx context.Context) ([]domain.Hotel, error) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindHotels")
 	}
 
-	var r0 []usecase.HotelOutput
+	var r0 []domain.Hotel
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]usecase.HotelOutput, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]domain.Hotel, error)); ok {
 		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []usecase.HotelOutput); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []domain.Hotel); ok {
 		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]usecase.HotelOutput)
+			r0 = ret.Get(0).([]domain.Hotel)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
@@ -165,12 +177,12 @@ func (_c *MockHotelService_FindHotels_Call) Run(run func(ctx context.Context)) *
 	return _c
 }
 
-func (_c *MockHotelService_FindHotels_Call) Return(hotelOutputs []usecase.HotelOutput, err error) *MockHotelService_FindHotels_Call {
-	_c.Call.Return(hotelOutputs, err)
+func (_c *MockHotelService_FindHotels_Call) Return(hotels []domain.Hotel, err error) *MockHotelService_FindHotels_Call {
+	_c.Call.Return(hotels, err)
 	return _c
 }
 
-func (_c *MockHotelService_FindHotels_Call) RunAndReturn(run func(ctx context.Context) ([]usecase.HotelOutput, error)) *MockHotelService_FindHotels_Call {
+func (_c *MockHotelService_FindHotels_Call) RunAndReturn(run func(ctx context.Context) ([]domain.Hotel, error)) *MockHotelService_FindHotels_Call {
 	_c.Call.Return(run)
 	return _c
 }

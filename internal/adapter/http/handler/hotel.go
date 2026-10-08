@@ -7,6 +7,7 @@ import (
 	v10 "github.com/go-playground/validator/v10"
 	"github.com/netologist/hotel-booking/internal/adapter/http/util"
 	"github.com/netologist/hotel-booking/internal/adapter/validator"
+	"github.com/netologist/hotel-booking/internal/domain"
 	"github.com/netologist/hotel-booking/internal/gen/openapi"
 	"github.com/netologist/hotel-booking/internal/usecase"
 )
@@ -38,7 +39,7 @@ func (h *HotelHandler) CreateHotel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	model, err := h.hotelService.CreateHotel(r.Context(), toCreateHotelInput(dto))
+	model, err := h.hotelService.CreateHotel(r.Context(), dto.Name, dto.Address, dto.City)
 	if err != nil {
 		util.RespondError(w, err)
 		return
@@ -73,26 +74,18 @@ func (h *HotelHandler) validateCreateHotelRequest(dto openapi.CreateHotelRequest
 
 // mapper methods
 
-func toCreateHotelInput(r openapi.CreateHotelRequest) usecase.CreateHotelInput {
-	return usecase.CreateHotelInput{
-		Name:    r.Name,
-		Address: r.Address,
-		City:    r.City,
-	}
-}
-
-func toHotelResponse(output usecase.CreateHotelOutput) openapi.Hotel {
+func toHotelResponse(output domain.Hotel) openapi.Hotel {
 	return openapi.Hotel{
 		Id:        output.ID,
 		Name:      output.Name,
 		City:      output.City,
 		Address:   output.Address,
-		CreatedAt: output.CreatedAt,
-		UpdatedAt: output.UpdatedAt,
+		CreatedAt: &output.CreatedAt,
+		UpdatedAt: &output.UpdatedAt,
 	}
 }
 
-func toHotelListResponse(hotels []usecase.HotelOutput) []openapi.Hotel {
+func toHotelListResponse(hotels []domain.Hotel) []openapi.Hotel {
 	res := make([]openapi.Hotel, 0, len(hotels))
 	for _, h := range hotels {
 		res = append(res, openapi.Hotel{
@@ -100,8 +93,8 @@ func toHotelListResponse(hotels []usecase.HotelOutput) []openapi.Hotel {
 			Name:      h.Name,
 			Address:   h.Address,
 			City:      h.City,
-			CreatedAt: h.CreatedAt,
-			UpdatedAt: h.UpdatedAt,
+			CreatedAt: &h.CreatedAt,
+			UpdatedAt: &h.UpdatedAt,
 		})
 	}
 	return res
