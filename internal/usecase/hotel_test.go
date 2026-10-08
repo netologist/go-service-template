@@ -140,7 +140,7 @@ func TestHotelService_CreateHotel_Error(t *testing.T) {
 	mockRepo := domainmocks.NewMockHotelRepository(t)
 	service := usecase.NewHotelService(mockRepo)
 	ctx := context.Background()
-	repoErr := errors.New("db error")
+	repoErr := errors.New("repository connection failed")
 
 	mockRepo.EXPECT().Create(ctx, mock.MatchedBy(func(h domain.Hotel) bool {
 		return h.Name == testHotelName &&
@@ -150,7 +150,8 @@ func TestHotelService_CreateHotel_Error(t *testing.T) {
 	})).Return(domain.Hotel{}, repoErr).Once()
 
 	res, err := service.CreateHotel(ctx, testHotelName, testHotelAddress, testHotelCity)
-	require.ErrorContains(t, err, "db error")
+	require.ErrorIs(t, err, repoErr)
+	require.ErrorContains(t, err, "create hotel")
 	assert.Equal(t, uuid.Nil, res.ID)
 }
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -200,6 +201,38 @@ func TestHotelRepository_Create_Error(t *testing.T) {
 
 	res, err := repo.Create(ctx, input)
 	require.ErrorIs(t, err, dbErr)
+	assert.Zero(t, res)
+
+	q.AssertExpectations(t)
+}
+
+func TestHotelRepository_Create_UniqueViolation(t *testing.T) {
+	q := &mockQuerier{}
+	repo := NewHotelRepositoryWithQuerier(q)
+	ctx := context.Background()
+	pgErr := &pgconn.PgError{
+		Code:   "23505",
+		Detail: "Key (name)=(Grand Budapest Hotel) already exists.",
+	}
+
+	hotelID := uuid.New()
+	input := domain.Hotel{
+		ID:      hotelID,
+		Name:    testHotelName,
+		Address: testHotelAddress,
+		City:    testHotelCity,
+	}
+
+	expectedArg := sqlc.CreateHotelParams{
+		ID:      hotelID,
+		Name:    testHotelName,
+		Address: testHotelAddress,
+		City:    testHotelCity,
+	}
+	q.On("CreateHotel", ctx, expectedArg).Return(sqlc.Hotel{}, pgErr).Once()
+
+	res, err := repo.Create(ctx, input)
+	require.ErrorIs(t, err, domain.ErrHotelAlreadyExists)
 	assert.Zero(t, res)
 
 	q.AssertExpectations(t)

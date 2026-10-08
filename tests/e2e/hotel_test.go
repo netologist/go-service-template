@@ -63,14 +63,15 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer func() { _ = resp.Body.Close() }()
-
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(resp.Header.Get("Content-Type")).To(ContainSubstring("application/problem+json"))
 
-			var errResp map[string]any
-			err = json.NewDecoder(resp.Body).Decode(&errResp)
+			var prob openapi.Problem
+			err = json.NewDecoder(resp.Body).Decode(&prob)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(errResp["error"]).To(Equal("validation_failed"))
-			Expect(errResp["fields"]).NotTo(BeEmpty())
+			Expect(prob.Status).To(Equal(http.StatusBadRequest))
+			Expect(prob.Title).To(Equal("Bad Request"))
+			Expect(prob.Detail).NotTo(BeNil())
 		})
 
 		It("returns HTTP 400 when body is malformed JSON", func() {
@@ -81,16 +82,18 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer func() { _ = resp.Body.Close() }()
-
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(resp.Header.Get("Content-Type")).To(ContainSubstring("application/problem+json"))
 
-			var errResp map[string]string
-			err = json.NewDecoder(resp.Body).Decode(&errResp)
+			var prob openapi.Problem
+			err = json.NewDecoder(resp.Body).Decode(&prob)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(errResp["error"]).To(Equal("malformed JSON body"))
+			Expect(prob.Status).To(Equal(http.StatusBadRequest))
+			Expect(prob.Title).To(Equal("Bad Request"))
+			Expect(prob.Detail).NotTo(BeNil())
 		})
 
-		It("returns HTTP 500 when attempting to register a duplicate hotel name", func() {
+		It("returns HTTP 409 when attempting to register a duplicate hotel name", func() {
 			hotelName := fmt.Sprintf("E2E Unique Hotel %s", uuid.NewString()[:8])
 			payload, err := json.Marshal(map[string]string{
 				fieldHotelName:    hotelName,
@@ -117,7 +120,16 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer func() { _ = resp2.Body.Close() }()
 
-			Expect(resp2.StatusCode).To(Equal(http.StatusInternalServerError))
+			Expect(resp2.StatusCode).To(Equal(http.StatusConflict))
+			Expect(resp2.Header.Get("Content-Type")).To(ContainSubstring("application/problem+json"))
+
+			var prob openapi.Problem
+			err = json.NewDecoder(resp2.Body).Decode(&prob)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(prob.Status).To(Equal(http.StatusConflict))
+			Expect(prob.Title).To(Equal("Conflict"))
+			Expect(prob.Code).NotTo(BeNil())
+			Expect(*prob.Code).To(Equal("HOTEL_ALREADY_EXISTS"))
 		})
 	})
 
