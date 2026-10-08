@@ -2,7 +2,10 @@ package util
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/netologist/hotel-booking/internal/domain"
 )
 
 type errorResponse struct {
@@ -23,6 +26,11 @@ func RespondError(w http.ResponseWriter, err error) {
 		status = http.StatusInternalServerError
 		code   = "INTERNAL_SERVER_ERROR"
 	)
+
+	if errors.Is(err, domain.ErrInvalidHotel) {
+		status = http.StatusBadRequest
+		code = "INVALID_HOTEL"
+	}
 
 	RespondJSON(w, status, errorResponse{
 		Error: err.Error(),

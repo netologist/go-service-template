@@ -280,6 +280,34 @@ func TestHotelHandler_CreateHotel_ServiceError(t *testing.T) {
 	assert.Equal(t, errInternalServer, body["code"])
 }
 
+func TestHotelHandler_CreateHotel_DomainInvariantError(t *testing.T) {
+	mockService := usecasemocks.NewMockHotelService(t)
+	v := customvalidator.NewForJsonTag()
+	h := handler.NewHotelHandler(mockService, v)
+
+	domainErr := domain.ErrInvalidHotel
+	mockService.EXPECT().
+		CreateHotel(mock.Anything, testHotelName, testHotelAddress, testHotelCity).
+		Return(domain.Hotel{}, domainErr).
+		Once()
+	req := httptest.NewRequestWithContext(
+		context.Background(),
+		http.MethodPost,
+		"/api/v1/hotels",
+		strings.NewReader(validCreateHotelJSON),
+	)
+	rec := httptest.NewRecorder()
+
+	h.CreateHotel(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	var body map[string]string
+	err := json.NewDecoder(rec.Body).Decode(&body)
+	require.NoError(t, err)
+	assert.Equal(t, domainErr.Error(), body["error"])
+	assert.Equal(t, "INVALID_HOTEL", body["code"])
+}
+
 func TestHotelHandler_FindHotels_SuccessWithHotels(t *testing.T) {
 	hotel1ID := uuid.New()
 	hotel2ID := uuid.New()

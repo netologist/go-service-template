@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/netologist/hotel-booking/internal/domain"
 )
 
@@ -31,17 +30,12 @@ func (u *hotelService) FindHotels(ctx context.Context) ([]domain.Hotel, error) {
 }
 
 func (u *hotelService) CreateHotel(ctx context.Context, name, address, city string) (domain.Hotel, error) {
-	id, err := uuid.NewV7()
+	hotel, err := domain.NewHotel(name, address, city)
 	if err != nil {
-		return domain.Hotel{}, fmt.Errorf("id not created: %w", err)
+		return domain.Hotel{}, fmt.Errorf("create hotel: %w", err)
 	}
 
-	entity, err := u.hotelRepo.Create(ctx, domain.Hotel{
-		ID:      id,
-		Name:    name,
-		Address: address,
-		City:    city,
-	})
+	entity, err := u.hotelRepo.Create(ctx, hotel)
 	if err != nil {
 		return domain.Hotel{}, fmt.Errorf("db error: %w", err)
 	}

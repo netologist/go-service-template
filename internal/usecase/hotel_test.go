@@ -153,3 +153,14 @@ func TestHotelService_CreateHotel_Error(t *testing.T) {
 	require.ErrorContains(t, err, "db error")
 	assert.Equal(t, uuid.Nil, res.ID)
 }
+
+func TestHotelService_CreateHotel_DomainInvariantFailure(t *testing.T) {
+	mockRepo := domainmocks.NewMockHotelRepository(t)
+	service := usecase.NewHotelService(mockRepo)
+	ctx := context.Background()
+
+	res, err := service.CreateHotel(ctx, " ", testHotelAddress, testHotelCity)
+	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidHotel)
+	assert.Equal(t, uuid.Nil, res.ID)
+}
