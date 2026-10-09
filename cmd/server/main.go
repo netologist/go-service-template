@@ -11,10 +11,9 @@ import (
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	httpadapter "github.com/netologist/hotel-booking/internal/adapter/http"
-	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
+	"github.com/netologist/hotel-booking/internal/adapter/httpapi"
+	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
 	"github.com/netologist/hotel-booking/internal/adapter/postgres"
-
 	"github.com/netologist/hotel-booking/internal/config"
 	"github.com/netologist/hotel-booking/internal/usecase"
 )
@@ -27,6 +26,7 @@ func main() {
 	}
 
 	setupLogger(cfg.LogLevel)
+	slog.Info("starting application", "environment", cfg.Environment)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -47,14 +47,14 @@ func main() {
 func runServer(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config) error {
 	hotelRepo := postgres.NewHotelRepository(pool)
 	hotelService := usecase.NewHotelService(hotelRepo)
-	handlers := httpadapter.NewServer(
+	handlers := httpapi.NewServer(
 		handler.NewHealthCheck(),
 		handler.NewHotelHandler(hotelService),
 	)
-	router := httpadapter.NewRouter(handlers)
+	router := httpapi.NewRouter(handlers)
 
 	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),
+		Addr:              cfg.ServerAddr(),
 		Handler:           router,
 		ReadHeaderTimeout: cfg.ServerReadHeaderTimeout,
 		ReadTimeout:       cfg.ServerReadTimeout,
@@ -98,13 +98,13 @@ func setupLogger(levelStr string) {
 }
 
 func setupPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
-	return postgres.NewPool(ctx,
-		postgres.WithDatabaseURL(cfg.DatabaseURL),
-		postgres.WithMaxConns(cfg.DBMaxConns),
-		postgres.WithMinConns(cfg.DBMinConns),
-		postgres.WithMaxConnLifetime(cfg.DBMaxConnLifetime),
-		postgres.WithMaxConnIdleTime(cfg.DBMaxConnIdleTime),
-		postgres.WithHealthCheckPeriod(cfg.DBHealthCheckPeriod),
-		postgres.WithPingTimeout(cfg.DBPingTimeout),
-	)
+	return postgres.NewPool(ctx, postgres.PoolConfig{
+		DatabaseURL:       cfg.DatabaseURL,
+		MaxConns:          cfg.DBMaxConns,
+		MinConns:          cfg.DBMinConns,
+		MaxConnLifetime:   cfg.DBMaxConnLifetime,
+		MaxConnIdleTime:   cfg.DBMaxConnIdleTime,
+		HealthCheckPeriod: cfg.DBHealthCheckPeriod,
+		PingTimeout:       cfg.DBPingTimeout,
+	})
 }

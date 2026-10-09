@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/netologist/hotel-booking/internal/adapter/http/problem"
+	"github.com/netologist/hotel-booking/internal/adapter/httpapi/problem"
 	"github.com/netologist/hotel-booking/internal/domain"
 	"github.com/netologist/hotel-booking/internal/gen/openapi"
 	"github.com/netologist/hotel-booking/internal/usecase"

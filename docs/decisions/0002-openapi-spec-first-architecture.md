@@ -17,14 +17,14 @@ When designing HTTP APIs in Go, development teams frequently face contract diver
 We need an API architecture that enforces a single source of truth for all HTTP contracts, guarantees compile-time type safety for routing interfaces, and seamlessly integrates with developer tooling, interactive documentation (Swagger UI), and HTTP client request specs.
 
 ## Decision
-We adopt an **OpenAPI 3.0 specification-first** approach utilizing **`oapi-codegen`** to generate Go Chi server interfaces and models directly from `docs/api/openapi/schema.yaml`.
+We adopt an **OpenAPI 3.0 specification-first** approach utilizing **`oapi-codegen`** to generate Go Chi server interfaces and models directly from `api/openapi.yaml`.
 
 The OpenAPI specification serves as the authoritative single source of truth across the application lifecycle:
 
 ```mermaid
 graph TD
-    Spec["OpenAPI 3.0 Spec<br/>(docs/api/openapi/schema.yaml)"]
-    Config["Codegen Config<br/>(docs/api/openapi/config.yaml)"]
+    Spec["OpenAPI 3.0 Spec<br/>(api/openapi.yaml)"]
+    Config["Codegen Config<br/>(oapi-codegen.yml)"]
     Oapi["oapi-codegen v2.8.0<br/>(mise run generate:api / go tool)"]
 
     subgraph Generated ["Generated Code (internal/adapter/http/generated/api.gen.go)"]
@@ -60,11 +60,11 @@ graph TD
 ```
 
 ### 1. Specification as the Single Source of Truth
-- The API contract is authored and maintained in `docs/api/openapi/schema.yaml` using OpenAPI 3.0.
+- The API contract is authored and maintained in `api/openapi.yaml` using OpenAPI 3.0.
 - All endpoints (e.g. `GET /healthz`), query parameters, request bodies, and response envelopes are formally defined here prior to or alongside implementation.
 
 ### 2. Automated Generation with `oapi-codegen`
-- Code generation is governed by `docs/api/openapi/config.yaml`:
+- Code generation is governed by `oapi-codegen.yaml`:
   - `package: generated`
   - `output: internal/adapter/http/generated/api.gen.go`
   - `generate.models: true`: Emits Go structs for schema objects with JSON tags.

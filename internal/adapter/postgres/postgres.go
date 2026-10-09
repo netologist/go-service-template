@@ -3,38 +3,62 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// NewPool initializes a PostgreSQL connection pool with optional configuration parameters.
-func NewPool(ctx context.Context, opts ...PoolOption) (*pgxpool.Pool, error) {
-	options := defaultPoolOptions()
-	for _, opt := range opts {
-		opt(&options)
-	}
+const defaultPingTimeout = 5 * time.Second
 
-	if options.databaseURL == "" {
+// PoolConfig holds parameters for the PostgreSQL connection pool.
+type PoolConfig struct {
+	DatabaseURL       string
+	MaxConns          int32
+	MinConns          int32
+	MaxConnLifetime   time.Duration
+	MaxConnIdleTime   time.Duration
+	HealthCheckPeriod time.Duration
+	PingTimeout       time.Duration
+}
+
+// NewPool initializes a PostgreSQL connection pool using PoolConfig.
+func NewPool(ctx context.Context, config PoolConfig) (*pgxpool.Pool, error) {
+	if config.DatabaseURL == "" {
 		return nil, fmt.Errorf("database url cannot be null")
 	}
 
-	cfg, err := pgxpool.ParseConfig(options.databaseURL)
+	cfg, err := pgxpool.ParseConfig(config.DatabaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed parsing database configuration: %w", err)
 	}
 
-	cfg.MaxConns = options.maxConns
-	cfg.MinConns = options.minConns
-	cfg.MaxConnLifetime = options.maxConnLifetime
-	cfg.MaxConnIdleTime = options.maxConnIdleTime
-	cfg.HealthCheckPeriod = options.healthCheckPeriod
+	if config.MaxConns > 0 {
+		cfg.MaxConns = config.MaxConns
+	}
+	if config.MinConns > 0 {
+		cfg.MinConns = config.MinConns
+	}
+	if config.MaxConnLifetime > 0 {
+		cfg.MaxConnLifetime = config.MaxConnLifetime
+	}
+	if config.MaxConnIdleTime > 0 {
+		cfg.MaxConnIdleTime = config.MaxConnIdleTime
+	}
+	if config.HealthCheckPeriod > 0 {
+		cfg.HealthCheckPeriod = config.HealthCheckPeriod
+	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating connection pool: %w", err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, options.postgresPingTimeout)
+	pingTimeout := config.PingTimeout
+	if pingTimeout <= 0 {
+		pingTimeout = defaultPingTimeout
+	}
+
+	pingCtx, cancel := context.WithTimeout(ctx, pingTimeout)
 	defer cancel()
 
 	if err := pool.Ping(pingCtx); err != nil {

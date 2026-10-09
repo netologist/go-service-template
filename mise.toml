@@ -67,7 +67,7 @@ go test -v -count=1 ./tests/e2e/...
 ''',
 ]
 
-[tasks."generate:openapi"]
+[tasks."generate:oapi"]
 description = "Generate Go code from OpenAPI specification"
 run = "go tool oapi-codegen -config oapi-codegen.yml api/openapi.yaml"
 

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
+	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
 	"github.com/netologist/hotel-booking/internal/gen/openapi"
 )
 

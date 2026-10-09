@@ -8,7 +8,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/netologist/hotel-booking/internal/adapter/validator"
 )
 
 type Config struct {
@@ -52,7 +51,7 @@ func Load() (*Config, error) {
 	}
 
 	// validate config
-	validate := validator.New("envconfig")
+	validate := NewValidation("envconfig")
 	if err := validate.Struct(&cfg); err != nil {
 		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}

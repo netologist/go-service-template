@@ -1,4 +1,4 @@
-package http
+package httpapi
 
 import (
 	"fmt"
@@ -9,15 +9,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/netologist/hotel-booking/internal/adapter/http/problem"
-	"github.com/netologist/hotel-booking/internal/adapter/http/util/swagger"
+	"github.com/netologist/hotel-booking/internal/adapter/httpapi/problem"
+	"github.com/netologist/hotel-booking/internal/adapter/httpapi/swagger"
 	"github.com/netologist/hotel-booking/internal/gen/openapi"
 	nethttpmiddleware "github.com/oapi-codegen/nethttp-middleware"
 )
 
 const (
-	TIMEOUT_DURATION = 60 * time.Second
-	MAX_AGE          = 300
+	requestTimeout = 60 * time.Second
+	corsMaxAge     = 300
 )
 
 // NewRouter constructs a Chi HTTP router with standard middlewares, request validation, and domain endpoints.
@@ -29,7 +29,7 @@ func NewRouter(server openapi.StrictServerInterface) http.Handler {
 	r.Use(middleware.ClientIPFromRemoteAddr)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(TIMEOUT_DURATION))
+	r.Use(middleware.Timeout(requestTimeout))
 
 	// CORS configuration
 	r.Use(cors.Handler(cors.Options{
@@ -38,7 +38,7 @@ func NewRouter(server openapi.StrictServerInterface) http.Handler {
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
-		MaxAge:           MAX_AGE,
+		MaxAge:           corsMaxAge,
 	}))
 
 	// OpenAPI Spec validation middleware

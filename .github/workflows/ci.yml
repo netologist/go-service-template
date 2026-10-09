@@ -41,8 +41,8 @@ jobs:
 
       - name: Ensure generated code is in sync
         run: |
-          if ! git diff --exit-code internal/gen/openapi/api.gen.go; then
-            echo "Error: OpenAPI generated files are out of sync. Run 'mise run generate:openapi' and commit the changes."
+          if ! git diff --exit-code internal/gen/oapi/api.gen.go; then
+            echo "Error: OpenAPI generated files are out of sync. Run 'mise run generate:oapi' and commit the changes."
             exit 1
           fi
 

@@ -1,4 +1,4 @@
-package validator
+package config
 
 import (
 	"reflect"
@@ -9,7 +9,8 @@ import (
 
 const tagParts = 2
 
-func New(tagName string) *validator.Validate {
+// New creates a new validator instance with tag name registration.
+func NewValidation(tagName string) *validator.Validate {
 	v := validator.New()
 	v.RegisterTagNameFunc(func(f reflect.StructField) string {
 		name := strings.SplitN(f.Tag.Get(tagName), ",", tagParts)[0]

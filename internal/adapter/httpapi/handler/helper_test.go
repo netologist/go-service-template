@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	httpadapter "github.com/netologist/hotel-booking/internal/adapter/http"
-	"github.com/netologist/hotel-booking/internal/adapter/http/handler"
+	"github.com/netologist/hotel-booking/internal/adapter/httpapi"
+	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
 
 	usecasemocks "github.com/netologist/hotel-booking/internal/gen/mocks/usecase"
 )
@@ -17,9 +17,9 @@ func SetupTestRouter(t *testing.T) http.Handler {
 
 func SetupTestRouterWithMock(t *testing.T) (http.Handler, *usecasemocks.MockHotelService) {
 	mockHotelService := usecasemocks.NewMockHotelService(t)
-	server := httpadapter.NewServer(
+	server := httpapi.NewServer(
 		handler.NewHealthCheck(),
 		handler.NewHotelHandler(mockHotelService),
 	)
-	return httpadapter.NewRouter(server), mockHotelService
+	return httpapi.NewRouter(server), mockHotelService
 }
