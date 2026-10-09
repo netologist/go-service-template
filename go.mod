@@ -16,6 +16,7 @@ tool (
 )
 
 require (
+	github.com/caarlos0/env/v11 v11.4.1
 	github.com/getkin/kin-openapi v0.144.0
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-chi/cors v1.2.2
@@ -23,12 +24,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/joho/godotenv v1.5.1
-	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/oapi-codegen/nethttp-middleware v1.1.2
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/stretchr/testify v1.12.1
+	golang.org/x/sync v0.23.0
 )
 
 require (
@@ -381,7 +382,6 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20260811152304-ee035b5b010f // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260924152758-ed294f943157 // indirect
 	golang.org/x/term v0.46.0 // indirect

@@ -9,8 +9,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/netologist/hotel-booking/internal/adapter/httpapi"
 	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
 	"github.com/netologist/hotel-booking/internal/adapter/postgres"
@@ -19,10 +22,16 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		slog.Error("application terminated with error", "error", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	cfg, err := config.Load()
 	if err != nil {
-		slog.Error("failed to load configuration", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	setupLogger(cfg.LogLevel)
@@ -33,22 +42,33 @@ func main() {
 
 	pool, err := setupPostgresPool(ctx, cfg)
 	if err != nil {
-		slog.Error("database connection failed", "error", err)
-		return
+		return fmt.Errorf("connect postgres: %w", err)
 	}
 	defer pool.Close()
 	slog.Info("connected to PostgreSQL database successfully")
 
 	if err := runServer(ctx, pool, cfg); err != nil {
-		slog.Error("server error", "error", err)
+		return fmt.Errorf("server error: %w", err)
 	}
+
+	return nil
 }
 
 func runServer(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config) error {
+	healthCheck := handler.NewHealthCheck()
+	return runServerWithHealth(ctx, pool, cfg, healthCheck)
+}
+
+func runServerWithHealth(
+	ctx context.Context,
+	pool *pgxpool.Pool,
+	cfg *config.Config,
+	healthHandler *handler.HealthCheck,
+) error {
 	hotelRepo := postgres.NewHotelRepository(pool)
 	hotelService := usecase.NewHotelService(hotelRepo)
 	handlers := httpapi.NewServer(
-		handler.NewHealthCheck(),
+		healthHandler,
 		handler.NewHotelHandler(hotelService),
 	)
 	router := httpapi.NewRouter(handlers)
@@ -62,30 +82,49 @@ func runServer(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config) erro
 		IdleTimeout:       cfg.ServerIdleTimeout,
 	}
 
-	serverErrCh := make(chan error, 1)
-	go func() {
+	g, gCtx := errgroup.WithContext(ctx)
+
+	// Goroutine 1: Run HTTP server
+	g.Go(func() error {
 		slog.Info("HTTP server listening", "address", server.Addr)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serverErrCh <- err
+			return fmt.Errorf("server listen error: %w", err)
 		}
-	}()
+		return nil
+	})
 
-	select {
-	case err := <-serverErrCh:
-		return fmt.Errorf("server listen error: %w", err)
-	case <-ctx.Done():
-		slog.Info("shutdown signal received, initiating graceful shutdown")
-	}
+	// Goroutine 2: Graceful shutdown coordinator
+	g.Go(func() error {
+		<-gCtx.Done()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ServerShutdownTimeout)
-	defer cancel()
+		// Context cancellation was triggered by external shutdown signal
+		if ctx.Err() != nil {
+			slog.Info("shutdown signal received, initiating graceful shutdown")
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("graceful shutdown failed: %w", err)
-	}
+			// Step 1: Flip readiness probe to unready (K8s stops routing traffic)
+			healthHandler.SetReady(false)
 
-	slog.Info("server shutdown completed successfully")
-	return nil
+			// Step 2: Wait for connection drain (K8s endpoint propagation window)
+			if cfg.ServerDrainTimeout > 0 {
+				slog.Info("waiting for connection drain before shutdown", "duration", cfg.ServerDrainTimeout)
+				drainTimer := time.NewTimer(cfg.ServerDrainTimeout)
+				defer drainTimer.Stop()
+				<-drainTimer.C
+			}
+		}
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ServerShutdownTimeout)
+		defer cancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("graceful shutdown failed: %w", err)
+		}
+
+		slog.Info("server shutdown completed successfully")
+		return nil
+	})
+
+	return g.Wait()
 }
 
 func setupLogger(levelStr string) {

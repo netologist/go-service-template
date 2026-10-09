@@ -23,3 +23,12 @@ func SetupTestRouterWithMock(t *testing.T) (http.Handler, *usecasemocks.MockHote
 	)
 	return httpapi.NewRouter(server), mockHotelService
 }
+
+func SetupTestRouterWithHealth(t *testing.T, health *handler.HealthCheck) http.Handler {
+	mockHotelService := usecasemocks.NewMockHotelService(t)
+	server := httpapi.NewServer(
+		health,
+		handler.NewHotelHandler(mockHotelService),
+	)
+	return httpapi.NewRouter(server)
+}

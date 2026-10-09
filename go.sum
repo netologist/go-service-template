@@ -184,6 +184,8 @@ github.com/butuzov/ireturn v0.4.1 h1:vWb3NO4t77iku/sjCQ/2pHTQeOmxEhjIriJqRLg1Y+I
 github.com/butuzov/ireturn v0.4.1/go.mod h1:q+DXKzTDV5guNuXLnIab9fKXizTn2miZHLhxH7V/GB4=
 github.com/butuzov/mirror v1.3.3 h1:v0RsWBhfFc1RQqE/f3sHpSttKDtodFn0gFmtYyD4/hA=
 github.com/butuzov/mirror v1.3.3/go.mod h1:h9BzzwYnTiHO0GzgvaTqIg7VSsOUhdIv51cHFFBmX1w=
+github.com/caarlos0/env/v11 v11.4.1 h1:fYwH0sWEsBSMPG7t4e/PEfTFzrWrpjyygXyUnWiSwEw=
+github.com/caarlos0/env/v11 v11.4.1/go.mod h1:qupehSf/Y0TUTsxKywqRt/vJjN5nz6vauiYEUUr8P4U=
 github.com/catenacyber/perfsprint v0.10.1 h1:u7Riei30bk46XsG8nknMhKLXG9BcXz3+3tl/WpKm0PQ=
 github.com/catenacyber/perfsprint v0.10.1/go.mod h1:DJTGsi/Zufpuus6XPGJyKOTMELe347o6akPvWG9Zcsc=
 github.com/ccojocar/zxcvbn-go v1.0.4 h1:FWnCIRMXPj43ukfX000kvBZvV6raSxakYr1nzyNrUcc=
@@ -584,8 +586,6 @@ github.com/kaptinlin/jsonschema v0.9.3 h1:uDVd3w4aXwO0tbycblKYvFofhl3hVuE31vOl5J
 github.com/kaptinlin/jsonschema v0.9.3/go.mod h1:LvtQ/mO0E1e/3c3DiOWTj05LTeot8cTv7DyQq7eJMQg=
 github.com/karamaru-alpha/copyloopvar v1.2.2 h1:yfNQvP9YaGQR7VaWLYcfZUlRP2eo2vhExWKxD/fP6q0=
 github.com/karamaru-alpha/copyloopvar v1.2.2/go.mod h1:oY4rGZqZ879JkJMtX3RRkcXRkmUvH0x35ykgaKgsgJY=
-github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
-github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
 github.com/kisielk/errcheck v1.20.0 h1:9rwHBNKzd4wkDWcROy3DvFGNqEPlkxBg305rvk7HabI=

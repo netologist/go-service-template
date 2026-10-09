@@ -31,6 +31,26 @@ func TestNewHealthCheck(t *testing.T) {
 	require.NotNil(t, h)
 }
 
+func TestHealthCheck_Readiness(t *testing.T) {
+	h := handler.NewHealthCheck()
+	assert.True(t, h.IsReady())
+
+	h.SetReady(false)
+	assert.False(t, h.IsReady())
+
+	h.SetReady(true)
+	assert.True(t, h.IsReady())
+}
+
+func TestHealthCheck_GetHealth_WhenNotReady(t *testing.T) {
+	h := handler.NewHealthCheck()
+	h.SetReady(false)
+
+	resp, err := h.GetHealth(context.Background(), openapi.GetHealthRequestObject{})
+	require.NoError(t, err)
+	require.IsType(t, handler.HealthCheckUnavailableResponse{}, resp)
+}
+
 func TestHealthCheck_GetHealth(t *testing.T) {
 	h := handler.NewHealthCheck()
 
@@ -76,5 +96,21 @@ func TestHealthCheck_Router_Integration(t *testing.T) {
 		router.ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
+	})
+
+	t.Run("GET /healthz returns 503 service unavailable when not ready", func(t *testing.T) {
+		health := handler.NewHealthCheck()
+		routerWithHealth := SetupTestRouterWithHealth(t, health)
+		health.SetReady(false)
+
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/healthz", nil)
+		rec := httptest.NewRecorder()
+
+		routerWithHealth.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
+		assert.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
+		assert.Contains(t, rec.Body.String(), "SERVICE_UNAVAILABLE")
+		assert.Contains(t, rec.Body.String(), "service is shutting down")
 	})
 }

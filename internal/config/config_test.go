@@ -21,7 +21,11 @@ const (
 	defaultHTTPPort          = 8080
 	defaultServerAddr        = ":8080"
 	defaultShutdownTimeout   = 10 * time.Second
+	defaultDrainTimeout      = 5 * time.Second
 	defaultReadHeaderTimeout = 30 * time.Second
+	defaultReadTimeout       = 30 * time.Second
+	defaultWriteTimeout      = 30 * time.Second
+	defaultIdleTimeout       = 2 * time.Minute
 	defaultMaxConns          = int32(25)
 	defaultMinConns          = int32(2)
 	defaultMaxConnLifetime   = 30 * time.Minute
@@ -35,7 +39,11 @@ const (
 	customServerAddr        = ":9090"
 	customDatabaseURL       = "postgres://custom:5432/custom_db"
 	customShutdownTimeout   = 15 * time.Second
+	customDrainTimeout      = 10 * time.Second
 	customReadHeaderTimeout = 45 * time.Second
+	customReadTimeout       = 20 * time.Second
+	customWriteTimeout      = 20 * time.Second
+	customIdleTimeout       = 90 * time.Second
 	customMaxConns          = int32(50)
 	customMinConns          = int32(5)
 	customMaxConnLifetime   = 1 * time.Hour
@@ -62,7 +70,11 @@ func resetEnv(t *testing.T) {
 	unsetEnv(t, "HTTP_PORT")
 	unsetEnv(t, "LOG_LEVEL")
 	unsetEnv(t, "SERVER_SHUTDOWN_TIMEOUT")
+	unsetEnv(t, "SERVER_DRAIN_TIMEOUT")
 	unsetEnv(t, "SERVER_READ_HEADER_TIMEOUT")
+	unsetEnv(t, "SERVER_READ_TIMEOUT")
+	unsetEnv(t, "SERVER_WRITE_TIMEOUT")
+	unsetEnv(t, "SERVER_IDLE_TIMEOUT")
 	unsetEnv(t, "DB_MAX_CONNS")
 	unsetEnv(t, "DB_MIN_CONNS")
 	unsetEnv(t, "DB_MAX_CONN_LIFETIME")
@@ -84,7 +96,11 @@ func TestLoad_Defaults(t *testing.T) {
 	assert.Equal(t, testDatabaseURL, cfg.DatabaseURL)
 	assert.Equal(t, defaultServerAddr, cfg.ServerAddr())
 	assert.Equal(t, defaultShutdownTimeout, cfg.ServerShutdownTimeout)
+	assert.Equal(t, defaultDrainTimeout, cfg.ServerDrainTimeout)
 	assert.Equal(t, defaultReadHeaderTimeout, cfg.ServerReadHeaderTimeout)
+	assert.Equal(t, defaultReadTimeout, cfg.ServerReadTimeout)
+	assert.Equal(t, defaultWriteTimeout, cfg.ServerWriteTimeout)
+	assert.Equal(t, defaultIdleTimeout, cfg.ServerIdleTimeout)
 	assert.Equal(t, defaultMaxConns, cfg.DBMaxConns)
 	assert.Equal(t, defaultMinConns, cfg.DBMinConns)
 	assert.Equal(t, defaultMaxConnLifetime, cfg.DBMaxConnLifetime)
@@ -100,7 +116,11 @@ func TestLoad_CustomEnv(t *testing.T) {
 	t.Setenv("LOG_LEVEL", customLogLevel)
 	t.Setenv("DATABASE_URL", customDatabaseURL)
 	t.Setenv("SERVER_SHUTDOWN_TIMEOUT", "15s")
+	t.Setenv("SERVER_DRAIN_TIMEOUT", "10s")
 	t.Setenv("SERVER_READ_HEADER_TIMEOUT", "45s")
+	t.Setenv("SERVER_READ_TIMEOUT", "20s")
+	t.Setenv("SERVER_WRITE_TIMEOUT", "20s")
+	t.Setenv("SERVER_IDLE_TIMEOUT", "90s")
 	t.Setenv("DB_MAX_CONNS", "50")
 	t.Setenv("DB_MIN_CONNS", "5")
 	t.Setenv("DB_MAX_CONN_LIFETIME", "1h")
@@ -118,7 +138,11 @@ func TestLoad_CustomEnv(t *testing.T) {
 	assert.Equal(t, customDatabaseURL, cfg.DatabaseURL)
 	assert.Equal(t, customServerAddr, cfg.ServerAddr())
 	assert.Equal(t, customShutdownTimeout, cfg.ServerShutdownTimeout)
+	assert.Equal(t, customDrainTimeout, cfg.ServerDrainTimeout)
 	assert.Equal(t, customReadHeaderTimeout, cfg.ServerReadHeaderTimeout)
+	assert.Equal(t, customReadTimeout, cfg.ServerReadTimeout)
+	assert.Equal(t, customWriteTimeout, cfg.ServerWriteTimeout)
+	assert.Equal(t, customIdleTimeout, cfg.ServerIdleTimeout)
 	assert.Equal(t, customMaxConns, cfg.DBMaxConns)
 	assert.Equal(t, customMinConns, cfg.DBMinConns)
 	assert.Equal(t, customMaxConnLifetime, cfg.DBMaxConnLifetime)
@@ -229,6 +253,13 @@ func dbAndServerValidationCases() []validationCase {
 			errSub: errValidationFailed,
 		},
 		{
+			name: "server_drain_timeout_negative",
+			setup: func(t *testing.T) {
+				t.Setenv("SERVER_DRAIN_TIMEOUT", "-1s")
+			},
+			errSub: errValidationFailed,
+		},
+		{
 			name: "server_read_header_timeout_zero",
 			setup: func(t *testing.T) {
 				t.Setenv("SERVER_READ_HEADER_TIMEOUT", "0s")
@@ -300,4 +331,14 @@ func TestLoad_DotEnvReadError(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, cfg)
 	assert.ErrorContains(t, err, "failed to load .env file")
+}
+
+func TestLoad_DrainTimeoutZeroAllowed(t *testing.T) {
+	resetEnv(t)
+	t.Setenv("SERVER_DRAIN_TIMEOUT", "0s")
+
+	cfg, err := config.Load()
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	assert.Equal(t, time.Duration(0), cfg.ServerDrainTimeout)
 }

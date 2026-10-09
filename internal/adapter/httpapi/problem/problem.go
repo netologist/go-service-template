@@ -56,6 +56,18 @@ func InternalServerError(detail, instance string) openapi.Problem {
 	)
 }
 
+// ServiceUnavailable creates a 503 Problem.
+func ServiceUnavailable(detail, instance string) openapi.Problem {
+	return New(
+		http.StatusServiceUnavailable,
+		http.StatusText(http.StatusServiceUnavailable),
+		detail,
+		instance,
+		"SERVICE_UNAVAILABLE",
+		nil,
+	)
+}
+
 // Respond writes an RFC 9457 problem details JSON response.
 func Respond(w http.ResponseWriter, p openapi.Problem) {
 	w.Header().Set("Content-Type", ContentTypeProblemJSON)

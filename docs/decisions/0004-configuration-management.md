@@ -1,4 +1,4 @@
-# ADR-0004: Application Configuration Management with envconfig, godotenv, and validator/v10
+# ADR-0004: Application Configuration Management with caarlos0/env/v11, godotenv, and validator/v10
 
 ## Status
 Accepted
@@ -24,7 +24,7 @@ We require a lightweight, type-safe, fail-fast configuration architecture that a
 ## Decision
 We adopt a centralized configuration architecture under `internal/config`, composed of:
 
-1. **`kelseyhightower/envconfig`**: Clean declarative mapping of environment variables to Go struct fields using struct tags (`envconfig`, `default`).
+1. **`github.com/caarlos0/env/v11`**: Clean, actively maintained, type-safe mapping of environment variables to Go struct fields using struct tags (`env`, `envDefault`). Replaces the unmaintained `kelseyhightower/envconfig` (inactive since 2019).
 2. **`joho/godotenv`**: Optional `.env` file loading for local development convenience. Missing `.env` files are ignored to ensure seamless execution in containerized and cloud environments.
 3. **`go-playground/validator/v10`**: Strict struct validation at bootstrap via `validate` tags, guaranteeing fail-fast application startup if configuration constraints are violated.
 
@@ -35,8 +35,8 @@ graph TD
     
     subgraph ConfigLoading ["internal/config.Load()"]
         GodotenvLoader["godotenv.Load()<br/>(Silently skips if not present)"]
-        EnvconfigParser["envconfig.Process('', &cfg)<br/>(Type coercion & default values)"]
-        ValidatorCheck["validator.New('envconfig').Struct(&cfg)<br/>(Fail-fast constraint validation)"]
+        EnvParser["env.Parse(&cfg)<br/>(Type coercion & default values)"]
+        ValidatorCheck["NewValidation('env').Struct(&cfg)<br/>(Fail-fast constraint validation)"]
     end
 
     subgraph AppBootstrap ["Application Subsystems"]
@@ -46,9 +46,9 @@ graph TD
     end
 
     DotEnv -.->|"optional overlay"| GodotenvLoader
-    EnvVars --> EnvconfigParser
-    GodotenvLoader --> EnvconfigParser
-    EnvconfigParser --> ValidatorCheck
+    EnvVars --> EnvParser
+    GodotenvLoader --> EnvParser
+    EnvParser --> ValidatorCheck
     ValidatorCheck -->|"Valid Config"| HTTPServer
     ValidatorCheck -->|"Valid Config"| DBPool
     ValidatorCheck -->|"Valid Config"| Logger
@@ -62,22 +62,26 @@ Configuration is captured in a single, strongly typed `Config` struct. Every fie
 
 ```go
 type Config struct {
-    Environment string `envconfig:"APP_ENV" default:"development" validate:"required,oneof=development staging production test"`
-    HTTPPort    int    `envconfig:"HTTP_PORT" default:"8080" validate:"required,min=1,max=65535"`
-    DatabaseURL string `envconfig:"DATABASE_URL" validate:"required"`
-    LogLevel    string `envconfig:"LOG_LEVEL" default:"info" validate:"required,oneof=debug info warn error"`
+    Environment string `env:"APP_ENV" envDefault:"development" validate:"required,oneof=development staging production test"`
+    HTTPPort    int    `env:"HTTP_PORT" envDefault:"8080" validate:"required,min=1,max=65535"`
+    DatabaseURL string `env:"DATABASE_URL" validate:"required"`
+    LogLevel    string `env:"LOG_LEVEL" envDefault:"info" validate:"required,oneof=debug info warn error"`
 
     // HTTP Server settings
-    ServerShutdownTimeout   time.Duration `envconfig:"SERVER_SHUTDOWN_TIMEOUT" default:"10s" validate:"required"`
-    ServerReadHeaderTimeout time.Duration `envconfig:"SERVER_READ_HEADER_TIMEOUT" default:"30s" validate:"required"`
+    ServerShutdownTimeout   time.Duration `env:"SERVER_SHUTDOWN_TIMEOUT" envDefault:"10s" validate:"required"`
+    ServerDrainTimeout      time.Duration `env:"SERVER_DRAIN_TIMEOUT" envDefault:"5s" validate:"min=0"`
+    ServerReadHeaderTimeout time.Duration `env:"SERVER_READ_HEADER_TIMEOUT" envDefault:"30s" validate:"required"`
+    ServerReadTimeout       time.Duration `env:"SERVER_READ_TIMEOUT" envDefault:"30s" validate:"required"`
+    ServerWriteTimeout      time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"30s" validate:"required"`
+    ServerIdleTimeout       time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"2m" validate:"required"`
 
     // PostgreSQL pool settings
-    DBMaxConns          int32         `envconfig:"DB_MAX_CONNS" default:"25" validate:"required,min=1"`
-    DBMinConns          int32         `envconfig:"DB_MIN_CONNS" default:"2" validate:"min=0"`
-    DBMaxConnLifetime   time.Duration `envconfig:"DB_MAX_CONN_LIFETIME" default:"30m" validate:"required"`
-    DBMaxConnIdleTime   time.Duration `envconfig:"DB_MAX_CONN_IDLE_TIME" default:"5m" validate:"required"`
-    DBHealthCheckPeriod time.Duration `envconfig:"DB_HEALTH_CHECK_PERIOD" default:"1m" validate:"required"`
-    DBPingTimeout       time.Duration `envconfig:"DB_PING_TIMEOUT" default:"5s" validate:"required"`
+    DBMaxConns          int32         `env:"DB_MAX_CONNS" envDefault:"25" validate:"required,min=1"`
+    DBMinConns          int32         `env:"DB_MIN_CONNS" envDefault:"2" validate:"min=0"`
+    DBMaxConnLifetime   time.Duration `env:"DB_MAX_CONN_LIFETIME" envDefault:"30m" validate:"required"`
+    DBMaxConnIdleTime   time.Duration `env:"DB_MAX_CONN_IDLE_TIME" envDefault:"5m" validate:"required"`
+    DBHealthCheckPeriod time.Duration `env:"DB_HEALTH_CHECK_PERIOD" envDefault:"1m" validate:"required"`
+    DBPingTimeout       time.Duration `env:"DB_PING_TIMEOUT" envDefault:"5s" validate:"required"`
 }
 ```
 
@@ -86,8 +90,8 @@ type Config struct {
 ### 2. Startup Lifecycle & Fail-Fast Guarantees
 The `config.Load()` function executes in three deterministic stages:
 1. **Local `.env` Lookup**: Calls `godotenv.Load()`. If the file does not exist (`os.ErrNotExist`), execution continues uninterrupted. If the file exists but has syntax/permission errors, startup fails immediately.
-2. **Environment Variable Processing**: Calls `envconfig.Process("", &cfg)`, parsing strings into Go types (`int`, `time.Duration`, `string`) and injecting configured defaults for unset keys.
-3. **Constraint Validation**: Uses `internal/adapter/validator` (wrapped around `validator/v10`) configured with the `"envconfig"` tag name strategy. Validates business constraints (`min=1,max=65535`, `oneof=...`, `required`). Any constraint violation returns an actionable, descriptive error and aborts process boot before any network listener or database pool is instantiated.
+2. **Environment Variable Processing**: Calls `env.Parse(&cfg)`, parsing strings into Go types (`int`, `time.Duration`, `string`) and injecting configured defaults for unset keys.
+3. **Constraint Validation**: Uses `internal/config.NewValidation("env")` (wrapped around `validator/v10`) configured with the `"env"` tag name strategy. Validates business constraints (`min=1,max=65535`, `oneof=...`, `required`). Any constraint violation returns an actionable, descriptive error and aborts process boot before any network listener or database pool is instantiated.
 
 ---
 
@@ -101,7 +105,7 @@ The `config.Load()` function executes in three deterministic stages:
 - **Frictionless Developer Experience**: Developers can drop a `.env` file into the root directory for local runs without needing to export variables or modify Dockerfiles.
 
 ### Negative
-- **Validation Tag Learning Curve**: Developers adding new configuration parameters must declare both `envconfig` and `validate` tags consistently.
+- **Validation Tag Learning Curve**: Developers adding new configuration parameters must declare both `env` and `validate` tags consistently.
 - **Environment Overrides Only**: Dynamic runtime reloading without process restart is intentionally not supported (standard for immutable containerized services).
 
 ### Neutral
@@ -111,7 +115,9 @@ The `config.Load()` function executes in three deterministic stages:
 
 ## Alternatives Considered
 
-1. **`spf13/viper`**:
+1. **`kelseyhightower/envconfig`**:
+   - *Superseded*: Inactive and received no releases since 2019 (v1.4.0). Migrated to `github.com/caarlos0/env/v11` for active maintenance, modern Go generics support, and cleaner tag semantics (`env` / `envDefault`).
+2. **`spf13/viper`**:
    - *Rejected*: Excessively heavy for 12-factor cloud-native applications. Its multi-source precedence hierarchy (files, flags, remote configs, env) complicates debugging and configuration tracking, and lacks built-in declarative struct tag validation.
 2. **Direct `os.Getenv` Lookups**:
    - *Rejected*: Lacks type parsing, centralized defaults, and automatic struct binding. Leads to duplicated fallback logic and fragile string comparisons across application packages.
@@ -122,7 +128,7 @@ The `config.Load()` function executes in three deterministic stages:
 
 ## References
 - [12-Factor App: Config](https://12factor.net/config)
-- [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)
+- [caarlos0/env](https://github.com/caarlos0/env)
 - [joho/godotenv](https://github.com/joho/godotenv)
 - [go-playground/validator](https://github.com/go-playground/validator)
 - ADR-0001: Standardized Development Environment and Tooling Pipeline
