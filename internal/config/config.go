@@ -1,13 +1,10 @@
 package config
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -40,11 +37,6 @@ func (c *Config) ServerAddr() string {
 
 // Load populates configuration from the environment and validates struct constraints.
 func Load() (*Config, error) {
-	// .env if exists
-	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("failed to load .env file: %w", err)
-	}
-
 	// bind to config
 	var cfg Config
 	if err := env.Parse(&cfg); err != nil {

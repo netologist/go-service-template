@@ -4,7 +4,7 @@ services:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_NAME:-netologist/hotel-booking}:${IMAGE_TAG:-latest}
     entrypoint: ["sh", "-c", "goose -dir /database/migrations postgres \"$$DATABASE_URL\" up && tail -f /dev/null"]
     environment:
-      DATABASE_URL: postgres://postgres:postgresPassword123@postgres:5432/hotel_booking?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-hotel_booking}?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
@@ -15,7 +15,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgres://postgres:postgresPassword123@postgres:5432/hotel_booking?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-hotel_booking}?sslmode=disable
     ports:
       - "8080:8080"
     depends_on:

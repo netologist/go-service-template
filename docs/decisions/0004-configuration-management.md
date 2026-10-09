@@ -1,5 +1,4 @@
-# ADR-0004: Application Configuration Management with caarlos0/env/v11, godotenv, and validator/v10
-
+# ADR-0004: Application Configuration Management with caarlos0/env/v11 and validator/v10
 ## Status
 Accepted
 
@@ -23,18 +22,16 @@ We require a lightweight, type-safe, fail-fast configuration architecture that a
 
 ## Decision
 We adopt a centralized configuration architecture under `internal/config`, composed of:
-
 1. **`github.com/caarlos0/env/v11`**: Clean, actively maintained, type-safe mapping of environment variables to Go struct fields using struct tags (`env`, `envDefault`). Replaces the unmaintained `kelseyhightower/envconfig` (inactive since 2019).
-2. **`joho/godotenv`**: Optional `.env` file loading for local development convenience. Missing `.env` files are ignored to ensure seamless execution in containerized and cloud environments.
-3. **`go-playground/validator/v10`**: Strict struct validation at bootstrap via `validate` tags, guaranteeing fail-fast application startup if configuration constraints are violated.
-
+2. **`go-playground/validator/v10`**: Strict struct validation at bootstrap via `validate` tags, guaranteeing fail-fast application startup if configuration constraints are violated.
+3. **Local Developer Tooling via Mise**: `.env` file loading is delegated to developer tooling (`mise.toml` `_.file = ".env"` and `.env.example`). The Go binary does not perform filesystem reads for configuration, preserving strict 12-Factor App isolation in production containers.
 ```mermaid
 graph TD
-    DotEnv[".env File (Local Dev Only)"]
+    DotEnv[".env File (Local Dev)"]
+    Mise["Mise / Dev Tooling<br/>(_.file = '.env')"]
     EnvVars["OS Environment Variables<br/>(Container / K8s / Host)"]
     
     subgraph ConfigLoading ["internal/config.Load()"]
-        GodotenvLoader["godotenv.Load()<br/>(Silently skips if not present)"]
         EnvParser["env.Parse(&cfg)<br/>(Type coercion & default values)"]
         ValidatorCheck["NewValidation('env').Struct(&cfg)<br/>(Fail-fast constraint validation)"]
     end
@@ -45,15 +42,14 @@ graph TD
         Logger["Logging Subsystem<br/>(LogLevel)"]
     end
 
-    DotEnv -.->|"optional overlay"| GodotenvLoader
+    DotEnv -.->|"loaded by"| Mise
+    Mise -.->|"exports to process"| EnvVars
     EnvVars --> EnvParser
-    GodotenvLoader --> EnvParser
     EnvParser --> ValidatorCheck
     ValidatorCheck -->|"Valid Config"| HTTPServer
     ValidatorCheck -->|"Valid Config"| DBPool
     ValidatorCheck -->|"Valid Config"| Logger
     ValidatorCheck -.->|"Invalid Config"| FatalExit["Fatal Exit at Startup<br/>(Prevent boot on bad config)"]
-```
 
 ---
 
@@ -87,11 +83,9 @@ type Config struct {
 
 ---
 
-### 2. Startup Lifecycle & Fail-Fast Guarantees
-The `config.Load()` function executes in three deterministic stages:
-1. **Local `.env` Lookup**: Calls `godotenv.Load()`. If the file does not exist (`os.ErrNotExist`), execution continues uninterrupted. If the file exists but has syntax/permission errors, startup fails immediately.
-2. **Environment Variable Processing**: Calls `env.Parse(&cfg)`, parsing strings into Go types (`int`, `time.Duration`, `string`) and injecting configured defaults for unset keys.
-3. **Constraint Validation**: Uses `internal/config.NewValidation("env")` (wrapped around `validator/v10`) configured with the `"env"` tag name strategy. Validates business constraints (`min=1,max=65535`, `oneof=...`, `required`). Any constraint violation returns an actionable, descriptive error and aborts process boot before any network listener or database pool is instantiated.
+The `config.Load()` function executes in two deterministic stages:
+1. **Environment Variable Processing**: Calls `env.Parse(&cfg)`, parsing strings into Go types (`int`, `time.Duration`, `string`) and injecting configured defaults for unset keys.
+2. **Constraint Validation**: Uses `internal/config.NewValidation("env")` (wrapped around `validator/v10`) configured with the `"env"` tag name strategy. Validates business constraints (`min=1,max=65535`, `oneof=...`, `required`). Any constraint violation returns an actionable, descriptive error and aborts process boot before any network listener or database pool is instantiated.
 
 ---
 
@@ -117,11 +111,13 @@ The `config.Load()` function executes in three deterministic stages:
 
 1. **`kelseyhightower/envconfig`**:
    - *Superseded*: Inactive and received no releases since 2019 (v1.4.0). Migrated to `github.com/caarlos0/env/v11` for active maintenance, modern Go generics support, and cleaner tag semantics (`env` / `envDefault`).
-2. **`spf13/viper`**:
+2. **`joho/godotenv`**:
+   - *Superseded / Removed*: Runtime `.env` filesystem loading was removed from the Go binary. Local `.env` loading is delegated to `mise` (`_.file = ".env"`), preventing unexpected filesystem reads or configuration drift in containerized production environments.
+3. **`spf13/viper`**:
    - *Rejected*: Excessively heavy for 12-factor cloud-native applications. Its multi-source precedence hierarchy (files, flags, remote configs, env) complicates debugging and configuration tracking, and lacks built-in declarative struct tag validation.
-2. **Direct `os.Getenv` Lookups**:
+4. **Direct `os.Getenv` Lookups**:
    - *Rejected*: Lacks type parsing, centralized defaults, and automatic struct binding. Leads to duplicated fallback logic and fragile string comparisons across application packages.
-3. **Pure Flags (`flag` / `pflag` / `cobra`)**:
+5. **Pure Flags (`flag` / `pflag` / `cobra`)**:
    - *Rejected*: Passing extensive connection pooling parameters, timeouts, and secrets as CLI flags in containerized deployments leaks parameters to process inspection tables (`ps aux`) and complicates standard container orchestration.
 
 ---
@@ -129,7 +125,6 @@ The `config.Load()` function executes in three deterministic stages:
 ## References
 - [12-Factor App: Config](https://12factor.net/config)
 - [caarlos0/env](https://github.com/caarlos0/env)
-- [joho/godotenv](https://github.com/joho/godotenv)
 - [go-playground/validator](https://github.com/go-playground/validator)
 - ADR-0001: Standardized Development Environment and Tooling Pipeline
 - ADR-0003: PostgreSQL Persistence Layer Architecture with pgx/v5, sqlc, goose, and UUIDv7

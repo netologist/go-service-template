@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -151,38 +150,6 @@ func TestLoad_CustomEnv(t *testing.T) {
 	assert.Equal(t, customPingTimeout, cfg.DBPingTimeout)
 }
 
-func TestLoad_DotEnvFile(t *testing.T) {
-	tmpDir := t.TempDir()
-	dotenvContent := "DATABASE_URL=postgres://dotenv:5432/dotenv_db\n" +
-		"APP_ENV=staging\n" +
-		"HTTP_PORT=3000\n" +
-		"LOG_LEVEL=debug\n" +
-		"SERVER_SHUTDOWN_TIMEOUT=20s\n" +
-		"DB_MAX_CONNS=40\n"
-
-	err := os.WriteFile(filepath.Join(tmpDir, ".env"), []byte(dotenvContent), 0o600)
-	require.NoError(t, err)
-
-	t.Chdir(tmpDir)
-	unsetEnv(t, "DATABASE_URL")
-	unsetEnv(t, "APP_ENV")
-	unsetEnv(t, "HTTP_PORT")
-	unsetEnv(t, "LOG_LEVEL")
-	unsetEnv(t, "SERVER_SHUTDOWN_TIMEOUT")
-	unsetEnv(t, "DB_MAX_CONNS")
-
-	cfg, err := config.Load()
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, "postgres://dotenv:5432/dotenv_db", cfg.DatabaseURL)
-	assert.Equal(t, "staging", cfg.Environment)
-	assert.Equal(t, 3000, cfg.HTTPPort)
-	assert.Equal(t, "debug", cfg.LogLevel)
-	assert.Equal(t, 20*time.Second, cfg.ServerShutdownTimeout)
-	assert.Equal(t, int32(40), cfg.DBMaxConns)
-}
-
 type validationCase struct {
 	name   string
 	setup  func(t *testing.T)
@@ -318,19 +285,6 @@ func TestLoad_InvalidTypes(t *testing.T) {
 		assert.Nil(t, cfg)
 		assert.ErrorContains(t, err, errProcessEnvFailed)
 	})
-}
-
-func TestLoad_DotEnvReadError(t *testing.T) {
-	tmpDir := t.TempDir()
-	err := os.Mkdir(filepath.Join(tmpDir, ".env"), 0o750)
-	require.NoError(t, err)
-
-	t.Chdir(tmpDir)
-
-	cfg, err := config.Load()
-	require.Error(t, err)
-	assert.Nil(t, cfg)
-	assert.ErrorContains(t, err, "failed to load .env file")
 }
 
 func TestLoad_DrainTimeoutZeroAllowed(t *testing.T) {

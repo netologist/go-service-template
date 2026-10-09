@@ -2,7 +2,11 @@
 go = "1.27.1"
 
 [env]
-DATABASE_URL = "postgres://postgres:postgresPassword123@localhost:5432/hotel_booking?sslmode=disable"
+_.file = ".env"
+POSTGRES_USER = "postgres"
+POSTGRES_PASSWORD = "S3cr3tP455w0rD"
+POSTGRES_DB = "hotel_booking"
+DATABASE_URL = "postgres://{{ env.POSTGRES_USER }}:{{ env.POSTGRES_PASSWORD }}@localhost:5432/{{ env.POSTGRES_DB }}?sslmode=disable"
 GOOSE_DRIVER = "postgres"
 GOOSE_MIGRATION_DIR = "./database/migrations"
 GOOSE_DBSTRING = "{{ env.DATABASE_URL }}"
