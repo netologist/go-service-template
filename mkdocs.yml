@@ -73,6 +73,7 @@ nav:
       - Tech Stack: tech-stack.md
       - CI/CD & Security: pipeline.md
   - Adoption Guide: template-guide.md
+  - API Reference & Swagger: api.md
   - Architecture Decisions (ADRs):
       - ADR-0001 Development Environment: decisions/0001-development-environment.md
       - ADR-0002 OpenAPI Spec-First: decisions/0002-openapi-spec-first-architecture.md

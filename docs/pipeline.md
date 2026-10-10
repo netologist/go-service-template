@@ -26,6 +26,7 @@ graph TD
     Trigger --> Sec[security: gitleaks & govulncheck]
     Trigger --> Lint[lint: goimports & golangci-lint]
     Trigger --> Test[test: gotestsum with -race & coverage]
+    Trigger --> Arch[architecture: Hexagonal boundary tests]
 
     Audit --> Build[build-api: Multi-stage Docker Build]
     Spec --> Build
@@ -34,6 +35,7 @@ graph TD
     Sec --> Build
     Lint --> Build
     Test --> Build
+    Arch --> Build
 
     Build --> Trivy[Trivy Scan: Local Tarball - CRITICAL/HIGH]
     Trivy --> Push{Push Event?}
@@ -73,7 +75,15 @@ graph TD
 - **Race Detection**: Detects data races at runtime in concurrent goroutines.
 - **Atomic Coverage**: Produces deterministic code coverage reports uploaded as workflow artifacts (retained for 7 days).
 
-### 3.6. `build-api` (Build, Scan & Supply Chain Security)
+
+### 3.6. `architecture` (Hexagonal Architecture Boundary Enforcement)
+- **Goal**: Guarantee zero layer leakage and enforce Hexagonal Architecture dependency directions.
+- **Rules Enforced**:
+  - `internal/domain` only imports standard library packages and allowed primitives (`uuid`). Absolutely no imports of `usecase`, `adapter`, `config`, `gen`, HTTP frameworks, or database drivers.
+  - `internal/usecase` only imports `domain`. No imports of outer adapters (`httpapi`, `postgres`), `config`, or `cmd`.
+  - Driving (`httpapi`) and driven (`postgres`) adapters never cross-import each other.
+  - `internal/config` never imports `domain`, `usecase`, or `adapter`.
+### 3.7. `build-api` (Build, Scan & Supply Chain Security)
 - **Stage 1: Multi-stage Docker Build**:
   - Builder image compiles the static binary with CGO disabled (`CGO_ENABLED=0`) and stripped debug tables (`-ldflags="-s -w"`).
   - Production image is created `FROM scratch` with only `/etc/ssl/certs/ca-certificates.crt`, non-root `/etc/passwd`, and the binary.
@@ -86,3 +96,40 @@ graph TD
   - On merge to `main` or semver tags, the image is pushed to GitHub Container Registry (`ghcr.io`).
   - **Cosign Keyless Signing**: Uses GitHub OIDC identity tokens to cryptographically sign the image digest.
   - Generates SLSA v1 provenance and GitHub SBOM attestations.
+
+---
+
+## 4. Documentation Pipeline & Enabling GitHub Pages
+
+This repository includes a dedicated documentation pipeline (`.github/workflows/docs.yml`) that compiles the MkDocs Material documentation site and deploys it using modern, tokenless GitHub Actions artifact deployment.
+
+### 4.1. How to Enable GitHub Pages on GitHub
+
+To activate automated documentation publishing for your repository:
+
+1. **Navigate to Repository Settings**:
+   - Open your repository on GitHub.
+   - Click on the **Settings** tab in the top navigation bar.
+
+2. **Open Pages Configuration**:
+   - In the left sidebar, scroll down to the **Code and automation** section.
+   - Click on **Pages**.
+
+3. **Select GitHub Actions as the Build Source**:
+   - Under **Build and deployment** $\rightarrow$ **Source**, open the dropdown.
+   - Select **GitHub Actions** (do **not** select "Deploy from a branch").
+   - *Note*: You do not need to configure a new workflow from GitHub's starter list; our `.github/workflows/docs.yml` is already configured and recognized automatically.
+
+4. **Repository Visibility & GitHub Plan Requirements**:
+   - **Public Repositories**: GitHub Pages is free and available on all accounts (including GitHub Free).
+   - **Private Repositories**: GitHub requires a paid plan (**GitHub Pro**, **Team**, or **Enterprise**) to host private GitHub Pages sites. If your repository is private on a GitHub Free account:
+     - Make the repository public via **Settings** $\rightarrow$ **Danger Zone** $\rightarrow$ **Change repository visibility** $\rightarrow$ **Make public**, or
+     - Upgrade your personal account to GitHub Pro or your organization to GitHub Team.
+   - *Artifact Fallback*: Even if Pages is not yet enabled or your repository is private on a free plan, the pipeline automatically compiles the site and publishes a 14-day retained `documentation-site` artifact on every workflow run. You can download and inspect the complete HTML site directly from the Actions run summary.
+
+5. **Verify the Deployment**:
+   - Once Pages is configured to use GitHub Actions, push a commit to `main` (or manually trigger the workflow via **Actions** $\rightarrow$ **Documentation Pipeline** $\rightarrow$ **Run workflow**).
+   - Once completed, your live documentation site URL will be displayed in **Settings** $\rightarrow$ **Pages** and directly on the repository homepage:
+     ```text
+     https://<owner>.github.io/<repo-name>/
+     ```

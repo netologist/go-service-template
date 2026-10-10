@@ -148,6 +148,9 @@ mise run test
 mise run test:e2e
 ```
 
+### Step 8: Enable GitHub Pages Documentation
+Follow the [GitHub Pages Configuration Guide](pipeline.md#4-documentation-pipeline-enabling-github-pages) to activate automated documentation hosting for your new service repository.
+
 ---
 
 ## 5. Summary of Best Practices for Production Services
