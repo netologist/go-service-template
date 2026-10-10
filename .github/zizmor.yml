@@ -1,0 +1,12 @@
+# zizmor static analysis configuration for GitHub Actions
+# Docs: https://docs.zizmor.sh/configuration
+
+rules:
+  # Technical Debt: TD-0001
+  # Ref: docs/techdebts/0001-ci-cache-poisoning.md
+  # CI workflow uses setup-go caching across test and check jobs while containing
+  # release/container publish stages. Docker builds run hermetically in multi-stage
+  # containers, avoiding runner-level cache contamination.
+  cache-poisoning:
+    ignore:
+      - ci.yml
