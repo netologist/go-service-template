@@ -53,8 +53,8 @@ description = "Run architectural boundary tests"
 run = "go test -v ./tests/arch/..."
 
 [tasks."test"]
-description = "Run unit and architectural tests with gotestsum"
-run = "go tool gotestsum --format testname -- -race ./internal/... ./tests/arch/..."
+description = "Run unit, client, and architectural tests with gotestsum"
+run = "go tool gotestsum --format testname -- -race ./internal/... ./pkg/... ./tests/arch/..."
 
 [tasks."test:coverage"]
 description = "Run unit tests with race detection and show function-level coverage"
@@ -86,6 +86,10 @@ go test -v -count=1 ./tests/e2e/...
 [tasks."generate:oapi"]
 description = "Generate Go code from OpenAPI specification"
 run = "go tool oapi-codegen -config oapi-codegen.yml api/openapi.yaml"
+
+[tasks."generate:client"]
+description = "Generate Go HTTP client SDK from OpenAPI specification"
+run = "go tool oapi-codegen -config oapi-codegen-client.yml api/openapi.yaml"
 
 [tasks."generate:sqlc"]
 description = "Generate Go code from SQL queries with sqlc"
@@ -119,8 +123,8 @@ run = "docker compose down -v"
 run = "docker compose exec postgres psql -U postgres -d service_db"
 
 [tasks."generate"]
-description = "Run all code generators (OpenAPI, SQL queries, Mocks)"
-depends = ["generate:oapi", "generate:sqlc", "generate:mocks"]
+description = "Run all code generators (OpenAPI Server, Client, SQL queries, Mocks)"
+depends = ["generate:oapi", "generate:client", "generate:sqlc", "generate:mocks"]
 
 [tasks."generate:mocks"]
 description = "Generate mocks with mockery"
