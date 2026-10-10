@@ -48,10 +48,13 @@ run = "go tool lefthook validate"
 description = "Check for known security vulnerabilities with govulncheck"
 run = "go tool govulncheck ./..."
 
-[tasks."test"]
-description = "Run all unit tests with gotestsum"
-run = "go tool gotestsum --format testname -- -race ./internal/..."
+[tasks."test:arch"]
+description = "Run architectural boundary tests"
+run = "go test -v ./tests/arch/..."
 
+[tasks."test"]
+description = "Run unit and architectural tests with gotestsum"
+run = "go tool gotestsum --format testname -- -race ./internal/... ./tests/arch/..."
 
 [tasks."test:coverage"]
 description = "Run unit tests with race detection and show function-level coverage"
@@ -60,6 +63,10 @@ run = "go tool gotestsum --format testname -- -race -covermode=atomic -coverprof
 [tasks."test:coverage:html"]
 description = "Run unit tests and open interactive HTML coverage report"
 run = "go tool gotestsum --format testname -- -race -covermode=atomic -coverprofile=coverage.out $(go list ./internal/... | grep -v '/internal/gen') && go tool cover -html=coverage.out"
+
+[tasks."test:mutation"]
+description = "Run mutation testing on domain layer using gremlins"
+run = "go tool gremlins unleash --timeout-coefficient 30 ./internal/domain"
 
 [tasks."test:e2e"]
 description = "Start PostgreSQL, apply migrations, run the server locally and execute the Ginkgo & Gomega E2E suite"

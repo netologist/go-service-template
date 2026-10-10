@@ -132,3 +132,24 @@ func TestNewItem_UnicodeBoundary(t *testing.T) {
 	assert.Equal(t, "Özet", item.Description)
 	assert.Equal(t, int64(0), item.Price)
 }
+
+func TestNewItem_BoundaryValues(t *testing.T) {
+	t.Parallel()
+
+	// MinNameLength (2 characters)
+	itemMinName, err := domain.NewItem("Ab", "desc", 0)
+	require.NoError(t, err)
+	assert.Equal(t, "Ab", itemMinName.Name)
+
+	// MaxNameLength (255 characters)
+	maxName := strings.Repeat("n", domain.MaxNameLength)
+	itemMaxName, err := domain.NewItem(maxName, "desc", 0)
+	require.NoError(t, err)
+	assert.Equal(t, maxName, itemMaxName.Name)
+
+	// MaxDescriptionLength (1000 characters)
+	maxDesc := strings.Repeat("d", domain.MaxDescriptionLength)
+	itemMaxDesc, err := domain.NewItem("Valid Name", maxDesc, 0)
+	require.NoError(t, err)
+	assert.Equal(t, maxDesc, itemMaxDesc.Description)
+}

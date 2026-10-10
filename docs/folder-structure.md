@@ -134,7 +134,9 @@ graph TD
 │       ├── item.go                # ItemService implementation and orchestration
 │       └── item_test.go           # Use case unit tests using domain mocks
 │
-├── tests/                         # Integration and End-to-End suites
+├── tests/                         # Integration, Architecture, and End-to-End suites
+│   ├── arch/                      # Hexagonal Architecture layer boundary enforcement tests
+│   │   └── architecture_test.go   # Pure Go parser tests verifying layer isolation
 │   └── e2e/                       # Ginkgo v2 & Gomega BDD end-to-end tests
 │       ├── e2e_suite_test.go      # Ginkgo suite bootstrap and lifecycle hooks
 │       ├── healthz_test.go        # Health probe verification

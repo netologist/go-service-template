@@ -93,7 +93,9 @@ The server starts on `http://localhost:8080`.
 mise run generate
 
 # Testing
-mise run test               # Unit tests with race detector
+mise run test               # Unit and architectural tests with race detector
+mise run test:arch          # Architecture boundary tests (Hexagonal rules)
+mise run test:mutation      # Mutation testing on domain layer (Gremlins)
 mise run test:coverage      # Unit tests + coverage summary
 mise run test:e2e           # Full end-to-end suite with compose
 
