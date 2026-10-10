@@ -7,9 +7,8 @@ package usecasemocks
 import (
 	"context"
 
-	mock "github.com/stretchr/testify/mock"
-
 	"github.com/netologist/go-service-template/internal/domain"
+	mock "github.com/stretchr/testify/mock"
 )
 
 // NewMockHotelService creates a new instance of MockHotelService. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
