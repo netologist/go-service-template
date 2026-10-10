@@ -8,7 +8,6 @@ tmp/
 dist/
 .idea/
 .vscode/
-tests/e2e/
 Dockerfile*
 docker-compose*.yml
 mise.toml
