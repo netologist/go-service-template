@@ -11,6 +11,11 @@ GOOSE_DRIVER = "postgres"
 GOOSE_MIGRATION_DIR = "./database/migrations"
 GOOSE_DBSTRING = "{{ env.DATABASE_URL }}"
 
+[tasks."dev"]
+description = "Start PostgreSQL, run migrations, and run hotel-booking server with live-reload (Air)"
+depends = ["docker:compose-up", "migrate:up"]
+run = "go tool air"
+
 [tasks."lint"]
 description = "Run golangci-lint on all packages"
 run = "go tool golangci-lint run ./..."

@@ -37,7 +37,7 @@ COPY database/migrations /database/migrations
 
 USER 10001:10001
 
-ENTRYPOINT ["/bin/goose", "-dir", "/database/migrations", "postgres"]
+ENTRYPOINT ["/bin/goose"]
 
 # ---- Production Runtime (Default Stage: Scratch) ----
 FROM scratch AS production
