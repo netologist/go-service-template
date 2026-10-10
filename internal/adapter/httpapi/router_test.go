@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi"
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
-	usecasemocks "github.com/netologist/hotel-booking/internal/gen/mocks/usecase"
-	"github.com/netologist/hotel-booking/internal/gen/openapi"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi/handler"
+	usecasemocks "github.com/netologist/go-service-template/internal/gen/mocks/usecase"
+	"github.com/netologist/go-service-template/internal/gen/openapi"
 )
 
 func newTestRouter(t *testing.T, opts httpapi.RouterOptions) (http.Handler, *usecasemocks.MockHotelService) {

@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/netologist/hotel-booking/internal/gen/openapi"
+	"github.com/netologist/go-service-template/internal/gen/openapi"
 )
 
 const (

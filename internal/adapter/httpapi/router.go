@@ -12,9 +12,9 @@ import (
 	"github.com/go-chi/cors"
 	nethttpmiddleware "github.com/oapi-codegen/nethttp-middleware"
 
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi/problem"
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi/swagger"
-	"github.com/netologist/hotel-booking/internal/gen/openapi"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi/problem"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi/swagger"
+	"github.com/netologist/go-service-template/internal/gen/openapi"
 )
 
 const (

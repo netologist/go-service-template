@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/netologist/hotel-booking/internal/gen/openapi"
+	"github.com/netologist/go-service-template/internal/gen/openapi"
 )
 
 // assetsFS holds a pinned swagger-ui-dist release (see assets/VERSION.txt).

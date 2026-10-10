@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/netologist/hotel-booking/internal/domain"
-	"github.com/netologist/hotel-booking/internal/gen/sqlc"
+	"github.com/netologist/go-service-template/internal/domain"
+	"github.com/netologist/go-service-template/internal/gen/sqlc"
 )
 
 // HotelRepository implements domain.HotelRepository via SQLC.

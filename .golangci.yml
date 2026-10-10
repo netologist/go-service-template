@@ -51,4 +51,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/netologist/hotel-booking
+        - github.com/netologist/go-service-template

@@ -14,11 +14,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi"
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
-	"github.com/netologist/hotel-booking/internal/adapter/postgres"
-	"github.com/netologist/hotel-booking/internal/config"
-	"github.com/netologist/hotel-booking/internal/usecase"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi/handler"
+	"github.com/netologist/go-service-template/internal/adapter/postgres"
+	"github.com/netologist/go-service-template/internal/config"
+	"github.com/netologist/go-service-template/internal/usecase"
 )
 
 func main() {

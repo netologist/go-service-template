@@ -15,10 +15,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
-	"github.com/netologist/hotel-booking/internal/domain"
-	usecasemocks "github.com/netologist/hotel-booking/internal/gen/mocks/usecase"
-	"github.com/netologist/hotel-booking/internal/gen/openapi"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi/handler"
+	"github.com/netologist/go-service-template/internal/domain"
+	usecasemocks "github.com/netologist/go-service-template/internal/gen/mocks/usecase"
+	"github.com/netologist/go-service-template/internal/gen/openapi"
 )
 
 const (

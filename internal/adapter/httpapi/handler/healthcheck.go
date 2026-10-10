@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi/problem"
-	"github.com/netologist/hotel-booking/internal/gen/openapi"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi/problem"
+	"github.com/netologist/go-service-template/internal/gen/openapi"
 )
 
 // HealthCheck handles health and readiness probe requests.

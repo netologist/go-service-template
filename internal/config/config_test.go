@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/netologist/hotel-booking/internal/config"
+	"github.com/netologist/go-service-template/internal/config"
 )
 
 const (

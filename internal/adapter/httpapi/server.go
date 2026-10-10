@@ -1,8 +1,8 @@
 package httpapi
 
 import (
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
-	"github.com/netologist/hotel-booking/internal/gen/openapi"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi/handler"
+	"github.com/netologist/go-service-template/internal/gen/openapi"
 )
 
 type Server struct {

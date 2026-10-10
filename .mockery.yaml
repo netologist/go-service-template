@@ -1,6 +1,6 @@
 template: testify
 packages:
-  github.com/netologist/hotel-booking/internal:
+  github.com/netologist/go-service-template/internal:
     config:
       all: true
       recursive: true

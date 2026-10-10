@@ -1,4 +1,4 @@
-module github.com/netologist/hotel-booking
+module github.com/netologist/go-service-template
 
 go 1.27.2
 

@@ -7,8 +7,9 @@ package domainmocks
 import (
 	"context"
 
-	"github.com/netologist/hotel-booking/internal/domain"
 	mock "github.com/stretchr/testify/mock"
+
+	"github.com/netologist/go-service-template/internal/domain"
 )
 
 // NewMockHotelRepository creates a new instance of MockHotelRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

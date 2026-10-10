@@ -1,7 +1,7 @@
 services:
   # Built locally from migration stage; decoupled from production API image.
   migration:
-    image: hotel-booking-migration:local
+    image: service-migration:local
     build:
       context: .
       dockerfile: Dockerfile
@@ -17,7 +17,7 @@ services:
         condition: service_healthy
 
   api:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAME:-netologist/hotel-booking}:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAME:-netologist/go-service-template}:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -47,7 +47,7 @@ services:
 
   # Test runner is built locally only; never pulled from or pushed to a registry.
   e2e:
-    image: hotel-booking-e2e:local
+    image: service-e2e:local
     build:
       context: .
       dockerfile: Dockerfile.e2e

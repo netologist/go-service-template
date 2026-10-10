@@ -1,0 +1,88 @@
+# CI/CD & Security Pipeline Reference
+
+This document details the continuous integration, continuous delivery (CI/CD), and software supply chain security architecture implemented in `.github/workflows/ci.yml`.
+
+---
+
+## 1. Pipeline Principles & Security Philosophy
+
+The CI pipeline is designed around **Zero-Trust**, **Least Privilege**, and **Shift-Left Security**:
+
+1. **Default Read-Only Permissions**: The workflow sets `permissions: contents: read` globally. Elevated privileges (e.g. `packages: write`, `id-token: write`) are granted strictly to specific jobs that require them.
+2. **Concurrency Control**: Running jobs on the same branch/PR are automatically cancelled when a new commit arrives (`concurrency.cancel-in-progress: true`), saving GitHub Actions runner minutes.
+3. **Drift-Free Code Generation**: Ensures that OpenAPI contracts, SQL queries, and test mocks committed to Git are 100% in sync with their source definitions.
+4. **Supply Chain Integrity**: Every published production image is built from `scratch`, scanned rootlessly for vulnerabilities via Trivy, signed keylessly via Cosign with OIDC, and attested with SLSA v1 provenance.
+
+---
+
+## 2. Pipeline Execution Flow
+
+```mermaid
+graph TD
+    Trigger([Push to main / PR / Tag]) --> Audit[workflow-audit: actionlint & zizmor]
+    Trigger --> Spec[validate-spec: oapi-codegen drift]
+    Trigger --> Mocks[validate-mocks: mockery drift]
+    Trigger --> SQLC[validate-sqlc: sqlc drift]
+    Trigger --> Sec[security: gitleaks & govulncheck]
+    Trigger --> Lint[lint: goimports & golangci-lint]
+    Trigger --> Test[test: gotestsum with -race & coverage]
+
+    Audit --> Build[build-api: Multi-stage Docker Build]
+    Spec --> Build
+    Mocks --> Build
+    SQLC --> Build
+    Sec --> Build
+    Lint --> Build
+    Test --> Build
+
+    Build --> Trivy[Trivy Scan: Local Tarball - CRITICAL/HIGH]
+    Trivy --> Push{Push Event?}
+    Push -->|No: Pull Request| Artifact[Upload Tarball Artifact]
+    Push -->|Yes: main or tag| GHCR[Push to GHCR & Cosign Sign]
+```
+
+---
+
+## 3. Job-by-Job Breakdown
+
+### 3.1. `workflow-audit`
+- **Goal**: Prevent pipeline misconfigurations, injection attacks, and workflow syntax errors.
+- **Tools**:
+  - `actionlint`: Static checker for GitHub Actions workflow files (verifies expressions, runner types, and context usage).
+  - `zizmor`: Security auditor for GitHub Actions, detecting overly permissive tokens, script injection vulnerabilities, and untrusted checkouts.
+
+### 3.2. Generator Drift Checks (`validate-spec`, `validate-mocks`, `validate-sqlc`)
+- **Goal**: Guarantee that generated Go code is never committed out-of-date.
+- **Mechanism**:
+  1. The runner executes the respective code generator (`oapi-codegen`, `mockery`, `sqlc generate`).
+  2. Runs `git diff --exit-code <path>`.
+  3. If changes are detected, the pipeline fails with an actionable error instructing the developer to run `mise run generate` locally and commit the result.
+
+### 3.3. `security` (Secrets & Vulnerabilities)
+- **Gitleaks**: Scans commit history and working tree for leaked API keys, tokens, private certificates, or passwords.
+- **Govulncheck**: Official Go vulnerability scanner. Analyzes the call graph of the code against the National Vulnerability Database (NVD) and Go security database, reporting only genuinely reachable vulnerabilities.
+
+### 3.4. `lint` (Code Formatting & Static Analysis)
+- **Formatting Verification**: Checks that all Go files comply with `goimports` grouping under the project's module prefix.
+- **Smart golangci-lint**:
+  - On **Pull Requests**: Runs with `--new-from-rev=origin/$BASE_REF`, linting only changed lines to provide instant feedback and avoid blocking on legacy code.
+  - On **Main/Tags**: Runs full scan `./...` across the entire codebase.
+
+### 3.5. `test` (Unit Testing & Race Detection)
+- **Flags**: `gotestsum --format testname -- -race -covermode=atomic -coverprofile=coverage.out ./internal/... ./cmd/...`
+- **Race Detection**: Detects data races at runtime in concurrent goroutines.
+- **Atomic Coverage**: Produces deterministic code coverage reports uploaded as workflow artifacts (retained for 7 days).
+
+### 3.6. `build-api` (Build, Scan & Supply Chain Security)
+- **Stage 1: Multi-stage Docker Build**:
+  - Builder image compiles the static binary with CGO disabled (`CGO_ENABLED=0`) and stripped debug tables (`-ldflags="-s -w"`).
+  - Production image is created `FROM scratch` with only `/etc/ssl/certs/ca-certificates.crt`, non-root `/etc/passwd`, and the binary.
+- **Stage 2: Rootless Trivy Scan**:
+  - The image is exported directly to a tarball (`docker save ... -o /tmp/api-image.tar`).
+  - Trivy executes against the tarball file without mounting `/var/run/docker.sock`, preventing privilege escalation on the CI runner.
+  - Fails the build if any `CRITICAL` or `HIGH` vulnerabilities are found.
+- **Stage 3: Conditional Push & Signing (Main/Tags only)**:
+  - On Pull Requests, the image is never pushed to the registry (only saved as an internal artifact for E2E runs).
+  - On merge to `main` or semver tags, the image is pushed to GitHub Container Registry (`ghcr.io`).
+  - **Cosign Keyless Signing**: Uses GitHub OIDC identity tokens to cryptographically sign the image digest.
+  - Generates SLSA v1 provenance and GitHub SBOM attestations.

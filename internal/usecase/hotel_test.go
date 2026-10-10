@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/netologist/hotel-booking/internal/domain"
-	domainmocks "github.com/netologist/hotel-booking/internal/gen/mocks/domain"
-	"github.com/netologist/hotel-booking/internal/usecase"
+	"github.com/netologist/go-service-template/internal/domain"
+	domainmocks "github.com/netologist/go-service-template/internal/gen/mocks/domain"
+	"github.com/netologist/go-service-template/internal/usecase"
 )
 
 const (

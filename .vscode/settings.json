@@ -8,10 +8,10 @@
       "baseUrl": "http://localhost:8080"
     },
     "staging": {
-      "baseUrl": "https://hotel-booking-staging.onrender.com"
+      "baseUrl": "https://api-staging.example.com"
     },
     "production": {
-      "baseUrl": "https://hotel-booking.onrender.com"
+      "baseUrl": "https://api.example.com"
     }
   },
 

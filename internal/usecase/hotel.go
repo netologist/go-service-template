@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/netologist/hotel-booking/internal/domain"
+	"github.com/netologist/go-service-template/internal/domain"
 )
 
 // HotelService is the inbound port for hotel business operations.

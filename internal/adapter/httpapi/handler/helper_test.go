@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi"
-	"github.com/netologist/hotel-booking/internal/adapter/httpapi/handler"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi"
+	"github.com/netologist/go-service-template/internal/adapter/httpapi/handler"
 
-	usecasemocks "github.com/netologist/hotel-booking/internal/gen/mocks/usecase"
+	usecasemocks "github.com/netologist/go-service-template/internal/gen/mocks/usecase"
 )
 
 func SetupTestRouter(t *testing.T) http.Handler {

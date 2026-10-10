@@ -12,7 +12,7 @@ GOOSE_MIGRATION_DIR = "./database/migrations"
 GOOSE_DBSTRING = "{{ env.DATABASE_URL }}"
 
 [tasks."dev"]
-description = "Start PostgreSQL, run migrations, and run hotel-booking server with live-reload (Air)"
+description = "Start PostgreSQL, run migrations, and run service server with live-reload (Air)"
 depends = ["docker:compose-up", "migrate:up"]
 run = "go tool air"
 
@@ -26,7 +26,7 @@ run = "go tool golangci-lint run --fix ./..."
 
 [tasks."format"]
 description = "Format Go code with goimports (grouped with module prefix)"
-run = "find . -type f -name '*.go' -not -path './vendor/*' -not -path './internal/gen/*' -exec go tool goimports -local github.com/netologist/hotel-booking -w {} +"
+run = "find . -type f -name '*.go' -not -path './vendor/*' -not -path './internal/gen/*' -exec go tool goimports -local github.com/netologist/go-service-template -w {} +"
 
 [tasks."secret:check"]
 description = "Run Gitleaks to detect secrets"
@@ -98,7 +98,7 @@ run = "go tool goose status"
 
 [tasks."docker:build"]
 description = "Build scratch production container"
-run = "docker build --target production -t hotel-booking:latest ."
+run = "docker build --target production -t go-service-template:latest ."
 
 [tasks."docker:compose-up"]
 description = "Start local dependencies (PostgreSQL) using Docker Compose"
@@ -130,3 +130,35 @@ run = "rm -rf internal/gen/mocks"
 description = "Fail if generated mocks are out of date (for CI)"
 depends = ["generate:mocks"]
 run = "git diff --exit-code -- internal/gen/mocks"
+
+[tasks."template:init"]
+description = "Initialize project with a new module name (usage: mise run template:init <new-module-path>)"
+run = '''
+NEW_MODULE="$1"
+if [ -z "$NEW_MODULE" ]; then
+  echo "Error: Missing new module path."
+  echo "Usage:   mise run template:init <new-module-path>"
+  echo "Example: mise run template:init github.com/my-org/my-service"
+  exit 1
+fi
+OLD_MODULE="github.com/netologist/go-service-template"
+echo "Initializing template from $OLD_MODULE to $NEW_MODULE..."
+
+go mod edit -module "$NEW_MODULE"
+
+find . -type f \( -name "*.go" -o -name "*.yaml" -o -name "*.yml" -o -name "*.toml" -o -name "Dockerfile*" \) \
+  -not -path "*/.git/*" -not -path "./vendor/*" | while read -r file; do
+    perl -pi -e "s|\Q$OLD_MODULE\E|$NEW_MODULE|g" "$file"
+done
+
+echo "Regenerating code..."
+mise run generate
+
+echo "Formatting imports..."
+mise run format
+
+echo "Running tests to verify..."
+mise run test
+
+echo "Successfully initialized template for $NEW_MODULE!"
+'''

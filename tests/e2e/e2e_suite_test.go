@@ -25,7 +25,7 @@ const (
 
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Hotel Booking E2E Test Suite")
+	RunSpecs(t, "Service E2E Test Suite")
 }
 
 var _ = BeforeSuite(func() {

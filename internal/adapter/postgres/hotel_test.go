@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/netologist/hotel-booking/internal/domain"
-	"github.com/netologist/hotel-booking/internal/gen/sqlc"
+	"github.com/netologist/go-service-template/internal/domain"
+	"github.com/netologist/go-service-template/internal/gen/sqlc"
 )
 
 const (

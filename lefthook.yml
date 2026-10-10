@@ -7,7 +7,7 @@ pre-commit:
     goimports:
       tags: style
       glob: "*.go"
-      run: go tool goimports -local github.com/netologist/hotel-booking -w {staged_files}
+      run: go tool goimports -local github.com/netologist/go-service-template -w {staged_files}
       stage_fixed: true
     golangci-lint:
       tags: lint
