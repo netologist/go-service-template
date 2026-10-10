@@ -1,7 +1,6 @@
 package handler_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -46,7 +45,7 @@ func TestHealthCheck_GetHealth_WhenNotReady(t *testing.T) {
 	h := handler.NewHealthCheck()
 	h.SetReady(false)
 
-	resp, err := h.GetHealth(context.Background(), openapi.GetHealthRequestObject{})
+	resp, err := h.GetHealth(t.Context(), openapi.GetHealthRequestObject{})
 	require.NoError(t, err)
 	require.IsType(t, handler.HealthCheckUnavailableResponse{}, resp)
 }
@@ -54,7 +53,7 @@ func TestHealthCheck_GetHealth_WhenNotReady(t *testing.T) {
 func TestHealthCheck_GetHealth(t *testing.T) {
 	h := handler.NewHealthCheck()
 
-	resp, err := h.GetHealth(context.Background(), openapi.GetHealthRequestObject{})
+	resp, err := h.GetHealth(t.Context(), openapi.GetHealthRequestObject{})
 	require.NoError(t, err)
 
 	healthResp, ok := resp.(openapi.GetHealth200JSONResponse)
@@ -69,7 +68,7 @@ func TestHealthCheck_Router_Integration(t *testing.T) {
 	router := SetupTestRouter(t)
 
 	t.Run("GET /healthz returns ok with timestamp", func(t *testing.T) {
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/healthz", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil)
 		rec := httptest.NewRecorder()
 
 		router.ServeHTTP(rec, req)
@@ -90,7 +89,7 @@ func TestHealthCheck_Router_Integration(t *testing.T) {
 	})
 
 	t.Run("POST /healthz returns method not allowed", func(t *testing.T) {
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/healthz", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/healthz", nil)
 		rec := httptest.NewRecorder()
 
 		router.ServeHTTP(rec, req)
@@ -103,7 +102,7 @@ func TestHealthCheck_Router_Integration(t *testing.T) {
 		routerWithHealth := SetupTestRouterWithHealth(t, health)
 		health.SetReady(false)
 
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/healthz", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil)
 		rec := httptest.NewRecorder()
 
 		routerWithHealth.ServeHTTP(rec, req)

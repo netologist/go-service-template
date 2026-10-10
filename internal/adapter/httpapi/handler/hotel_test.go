@@ -2,7 +2,6 @@ package handler_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -56,7 +55,7 @@ func TestHotelHandler_CreateHotel_Success(t *testing.T) {
 		UpdatedAt: fixedTime,
 	}, nil).Once()
 
-	resp, err := h.CreateHotel(context.Background(), openapi.CreateHotelRequestObject{
+	resp, err := h.CreateHotel(t.Context(), openapi.CreateHotelRequestObject{
 		Body: &openapi.CreateHotelJSONRequestBody{
 			Name:    testHotelName,
 			Address: testHotelAddress,
@@ -79,7 +78,7 @@ func TestHotelHandler_CreateHotel_MalformedJSON(t *testing.T) {
 	router, _ := SetupTestRouterWithMock(t)
 
 	req := httptest.NewRequestWithContext(
-		context.Background(),
+		t.Context(),
 		http.MethodPost,
 		"/api/v1/hotels",
 		strings.NewReader(`{"name": "invalid-json`),
@@ -207,7 +206,7 @@ func TestHotelRouter_CreateHotel_ValidationFailure(t *testing.T) {
 			require.NoError(t, err)
 
 			req := httptest.NewRequestWithContext(
-				context.Background(),
+				t.Context(),
 				http.MethodPost,
 				"/api/v1/hotels",
 				bytes.NewReader(payload),
@@ -240,7 +239,7 @@ func TestHotelHandler_CreateHotel_ServiceError(t *testing.T) {
 		Return(domain.Hotel{}, serviceErr).
 		Once()
 
-	resp, err := h.CreateHotel(context.Background(), openapi.CreateHotelRequestObject{
+	resp, err := h.CreateHotel(t.Context(), openapi.CreateHotelRequestObject{
 		Body: &openapi.CreateHotelJSONRequestBody{
 			Name:    testHotelName,
 			Address: testHotelAddress,
@@ -285,7 +284,7 @@ func TestHotelHandler_CreateHotel_DomainAndBusinessErrors(t *testing.T) {
 				Return(domain.Hotel{}, tc.mockErr).
 				Once()
 
-			resp, err := h.CreateHotel(context.Background(), openapi.CreateHotelRequestObject{
+			resp, err := h.CreateHotel(t.Context(), openapi.CreateHotelRequestObject{
 				Body: &openapi.CreateHotelJSONRequestBody{
 					Name:    testHotelName,
 					Address: testHotelAddress,
@@ -342,7 +341,7 @@ func TestHotelHandler_FindHotels_SuccessWithHotels(t *testing.T) {
 
 	mockService.EXPECT().FindHotels(mock.Anything).Return(expectedHotels, nil).Once()
 
-	resp, err := h.FindHotels(context.Background(), openapi.FindHotelsRequestObject{})
+	resp, err := h.FindHotels(t.Context(), openapi.FindHotelsRequestObject{})
 	require.NoError(t, err)
 
 	hotelsResp, ok := resp.(openapi.FindHotels200JSONResponse)
@@ -367,7 +366,7 @@ func TestHotelHandler_FindHotels_EmptyList(t *testing.T) {
 
 	mockService.EXPECT().FindHotels(mock.Anything).Return([]domain.Hotel{}, nil).Once()
 
-	resp, err := h.FindHotels(context.Background(), openapi.FindHotelsRequestObject{})
+	resp, err := h.FindHotels(t.Context(), openapi.FindHotelsRequestObject{})
 	require.NoError(t, err)
 
 	hotelsResp, ok := resp.(openapi.FindHotels200JSONResponse)
@@ -382,7 +381,7 @@ func TestHotelHandler_FindHotels_ServiceError(t *testing.T) {
 	serviceErr := errors.New("failed to retrieve hotels")
 	mockService.EXPECT().FindHotels(mock.Anything).Return(nil, serviceErr).Once()
 
-	resp, err := h.FindHotels(context.Background(), openapi.FindHotelsRequestObject{})
+	resp, err := h.FindHotels(t.Context(), openapi.FindHotelsRequestObject{})
 	require.ErrorIs(t, err, serviceErr)
 	assert.Nil(t, resp)
 }
@@ -402,7 +401,7 @@ func TestHotelRouter_Integration_CreateHotel(t *testing.T) {
 	}, nil).Once()
 
 	req := httptest.NewRequestWithContext(
-		context.Background(),
+		t.Context(),
 		http.MethodPost,
 		"/api/v1/hotels",
 		strings.NewReader(validCreateHotelJSON),
@@ -436,7 +435,7 @@ func TestHotelRouter_Integration_FindHotels(t *testing.T) {
 		},
 	}, nil).Once()
 
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/hotels", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/hotels", nil)
 	rec := httptest.NewRecorder()
 
 	router.ServeHTTP(rec, req)

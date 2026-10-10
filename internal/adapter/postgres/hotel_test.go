@@ -58,7 +58,7 @@ func TestNewHotelRepositoryWithQuerier(t *testing.T) {
 func TestHotelRepository_List_Success(t *testing.T) {
 	q := &mockQuerier{}
 	repo := NewHotelRepositoryWithQuerier(q)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	hotel1ID := uuid.New()
 	hotel2ID := uuid.New()
@@ -106,7 +106,7 @@ func TestHotelRepository_List_Success(t *testing.T) {
 func TestHotelRepository_List_Empty(t *testing.T) {
 	q := &mockQuerier{}
 	repo := NewHotelRepositoryWithQuerier(q)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	q.On("ListHotels", ctx).Return([]sqlc.Hotel{}, nil).Once()
 
@@ -120,7 +120,7 @@ func TestHotelRepository_List_Empty(t *testing.T) {
 func TestHotelRepository_List_Error(t *testing.T) {
 	q := &mockQuerier{}
 	repo := NewHotelRepositoryWithQuerier(q)
-	ctx := context.Background()
+	ctx := t.Context()
 	dbErr := errors.New("database connection failed")
 
 	q.On("ListHotels", ctx).Return(nil, dbErr).Once()
@@ -135,7 +135,7 @@ func TestHotelRepository_List_Error(t *testing.T) {
 func TestHotelRepository_Create_Success(t *testing.T) {
 	q := &mockQuerier{}
 	repo := NewHotelRepositoryWithQuerier(q)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	hotelID := uuid.New()
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
@@ -180,7 +180,7 @@ func TestHotelRepository_Create_Success(t *testing.T) {
 func TestHotelRepository_Create_Error(t *testing.T) {
 	q := &mockQuerier{}
 	repo := NewHotelRepositoryWithQuerier(q)
-	ctx := context.Background()
+	ctx := t.Context()
 	dbErr := errors.New("unique constraint violation")
 
 	hotelID := uuid.New()
@@ -209,7 +209,7 @@ func TestHotelRepository_Create_Error(t *testing.T) {
 func TestHotelRepository_Create_UniqueViolation(t *testing.T) {
 	q := &mockQuerier{}
 	repo := NewHotelRepositoryWithQuerier(q)
-	ctx := context.Background()
+	ctx := t.Context()
 	pgErr := &pgconn.PgError{
 		Code:   "23505",
 		Detail: "Key (name)=(Grand Budapest Hotel) already exists.",

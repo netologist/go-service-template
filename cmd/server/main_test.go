@@ -47,7 +47,7 @@ func TestRunServer_GracefulShutdown(t *testing.T) {
 	healthCheck := handler.NewHealthCheck()
 	assert.True(t, healthCheck.IsReady())
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	errCh := make(chan error, 1)
 	go func() {

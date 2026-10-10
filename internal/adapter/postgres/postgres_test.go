@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestNewPool_EmptyURL(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	pool, err := NewPool(ctx, PoolConfig{})
 	require.Error(t, err)
 	assert.Nil(t, pool)
@@ -18,7 +17,7 @@ func TestNewPool_EmptyURL(t *testing.T) {
 }
 
 func TestNewPool_InvalidURL(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	pool, err := NewPool(ctx, PoolConfig{
 		DatabaseURL: "invalid-url",
 		MaxConns:    10,
@@ -29,7 +28,7 @@ func TestNewPool_InvalidURL(t *testing.T) {
 }
 
 func TestNewPool_UnreachableHost(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	unreachableURL := "postgres://127.0.0.1:59999/nonexistent?sslmode=disable"
 	pool, err := NewPool(ctx, PoolConfig{
 		DatabaseURL: unreachableURL,

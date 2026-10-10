@@ -1,6 +1,6 @@
 module github.com/netologist/hotel-booking
 
-go 1.27.1
+go 1.27.2
 
 tool (
 	github.com/evilmartians/lefthook/v2

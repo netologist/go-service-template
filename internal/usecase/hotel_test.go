@@ -31,7 +31,7 @@ func TestNewHotelService(t *testing.T) {
 func TestHotelService_FindHotels_Success(t *testing.T) {
 	mockRepo := domainmocks.NewMockHotelRepository(t)
 	service := usecase.NewHotelService(mockRepo)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	hotel1ID := uuid.New()
 	hotel2ID := uuid.New()
@@ -78,7 +78,7 @@ func TestHotelService_FindHotels_Success(t *testing.T) {
 func TestHotelService_FindHotels_Empty(t *testing.T) {
 	mockRepo := domainmocks.NewMockHotelRepository(t)
 	service := usecase.NewHotelService(mockRepo)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	mockRepo.EXPECT().List(ctx).Return([]domain.Hotel{}, nil).Once()
 
@@ -90,7 +90,7 @@ func TestHotelService_FindHotels_Empty(t *testing.T) {
 func TestHotelService_FindHotels_Error(t *testing.T) {
 	mockRepo := domainmocks.NewMockHotelRepository(t)
 	service := usecase.NewHotelService(mockRepo)
-	ctx := context.Background()
+	ctx := t.Context()
 	repoErr := errors.New("repository list failed")
 
 	mockRepo.EXPECT().List(ctx).Return(nil, repoErr).Once()
@@ -103,7 +103,7 @@ func TestHotelService_FindHotels_Error(t *testing.T) {
 func TestHotelService_CreateHotel_Success(t *testing.T) {
 	mockRepo := domainmocks.NewMockHotelRepository(t)
 	service := usecase.NewHotelService(mockRepo)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	fixedTime := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
 
@@ -139,7 +139,7 @@ func TestHotelService_CreateHotel_Success(t *testing.T) {
 func TestHotelService_CreateHotel_Error(t *testing.T) {
 	mockRepo := domainmocks.NewMockHotelRepository(t)
 	service := usecase.NewHotelService(mockRepo)
-	ctx := context.Background()
+	ctx := t.Context()
 	repoErr := errors.New("repository connection failed")
 
 	mockRepo.EXPECT().Create(ctx, mock.MatchedBy(func(h domain.Hotel) bool {
@@ -158,7 +158,7 @@ func TestHotelService_CreateHotel_Error(t *testing.T) {
 func TestHotelService_CreateHotel_DomainInvariantFailure(t *testing.T) {
 	mockRepo := domainmocks.NewMockHotelRepository(t)
 	service := usecase.NewHotelService(mockRepo)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	res, err := service.CreateHotel(ctx, " ", testHotelAddress, testHotelCity)
 	require.Error(t, err)

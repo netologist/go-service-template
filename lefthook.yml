@@ -3,21 +3,22 @@ pre-commit:
   commands:
     gitleaks:
       tags: security secrets
-      run: go tool gitleaks detect --verbose --no-git
+      run: go tool gitleaks git --pre-commit --staged --verbose
     goimports:
       tags: style
       glob: "*.go"
-      run: go tool goimports -w {staged_files} && git add {staged_files}
+      run: go tool goimports -local github.com/netologist/hotel-booking -w {staged_files}
+      stage_fixed: true
     golangci-lint:
       tags: lint
       glob: "*.go"
-      run: go tool golangci-lint run --new-from-rev=HEAD~1
+      run: go tool golangci-lint run --new-from-rev=HEAD
 
 pre-push:
   commands:
     unit-tests:
       tags: test
-      run: go test -race -short ./internal/...
+      run: go test -race -short ./internal/... ./cmd/...
     govulncheck:
       tags: security
       run: go tool govulncheck ./...

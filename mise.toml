@@ -1,5 +1,5 @@
 [tools]
-go = "1.27.1"
+go = "1.27.2"
 
 [env]
 _.file = ".env"
@@ -20,8 +20,8 @@ description = "Run golangci-lint with auto-fix"
 run = "go tool golangci-lint run --fix ./..."
 
 [tasks."format"]
-description = "Format Go code with goimports"
-run = "go tool goimports -w $(find . -type f -name '*.go' -not -path './vendor/*')"
+description = "Format Go code with goimports (grouped with module prefix)"
+run = "go tool goimports -local github.com/netologist/hotel-booking -w $(find . -type f -name '*.go' -not -path './vendor/*')"
 
 [tasks."secret:check"]
 description = "Run Gitleaks to detect secrets"
@@ -68,7 +68,7 @@ go build -o "$BIN_DIR/server" ./cmd/server
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" 2>/dev/null; rm -rf "$BIN_DIR"' EXIT
 go test -v -count=1 ./tests/e2e/...
-''',
+  ''',
 ]
 
 [tasks."generate:oapi"]
@@ -76,7 +76,7 @@ description = "Generate Go code from OpenAPI specification"
 run = "go tool oapi-codegen -config oapi-codegen.yml api/openapi.yaml"
 
 [tasks."generate:sqlc"]
-description = "Generate Go code from OpenAPI specification"
+description = "Generate Go code from SQL queries with sqlc"
 run = "go tool sqlc generate"
 
 [tasks."migrate:up"]
@@ -93,7 +93,7 @@ run = "go tool goose status"
 
 [tasks."docker:build"]
 description = "Build scratch production container"
-run = "docker build -t hotel-booking:latest ."
+run = "docker build --target production -t hotel-booking:latest ."
 
 [tasks."docker:compose-up"]
 description = "Start local dependencies (PostgreSQL) using Docker Compose"
@@ -106,11 +106,15 @@ run = "docker compose down -v"
 [tasks.psql]
 run = "docker compose exec postgres psql -U postgres -d hotel_booking"
 
+[tasks."generate"]
+description = "Run all code generators (OpenAPI, SQL queries, Mocks)"
+depends = ["generate:oapi", "generate:sqlc", "generate:mocks"]
+
 [tasks."generate:mocks"]
 description = "Generate mocks with mockery"
 alias = "mocks:generate"
 run = "go tool mockery"
-sources = [".mockery.yml", "internal/**/*.go"]
+sources = [".mockery.yaml", "internal/**/*.go"]
 outputs = ["internal/gen/mocks/**/*.go"]
 
 [tasks."mocks:clean"]
@@ -119,5 +123,5 @@ run = "rm -rf internal/gen/mocks"
 
 [tasks."mocks:check"]
 description = "Fail if generated mocks are out of date (for CI)"
-depends = ["mocks"]
+depends = ["generate:mocks"]
 run = "git diff --exit-code -- internal/gen/mocks"

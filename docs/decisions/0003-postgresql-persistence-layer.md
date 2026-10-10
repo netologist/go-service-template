@@ -36,16 +36,16 @@ We adopt **PostgreSQL** as our primary relational database, architected around f
 ```mermaid
 graph TD
     subgraph Migration ["Schema Migration (pressly/goose/v3)"]
-        MigFiles["migrations/*.sql<br/>(Up / Down Steps)"]
-        GooseCLI["go tool goose<br/>(mise run db:migrate)"]
+        MigFiles["database/migrations/*.sql<br/>(Up / Down Steps)"]
+        GooseCLI["go tool goose<br/>(mise run migrate:up)"]
         PostgresDB[("PostgreSQL 16+ Engine")]
     end
 
     subgraph Codegen ["Type-Safe Query Generation (sqlc-dev/sqlc)"]
-        SqlcConfig["sqlc.yaml"]
-        SqlQueries["sql/queries/*.sql"]
-        SqlcTool["go tool sqlc generate<br/>(mise run generate:db)"]
-        GenRepo["internal/adapter/postgres/generated<br/>(Querier, Models, Queries)"]
+        SqlcConfig["sqlc.yml"]
+        SqlQueries["database/queries/*.sql"]
+        SqlcTool["go tool sqlc generate<br/>(mise run generate:sqlc)"]
+        GenRepo["internal/gen/sqlc<br/>(Querier, Models, Queries)"]
     end
 
     subgraph Runtime ["Application Runtime (jackc/pgx/v5)"]
@@ -79,19 +79,19 @@ graph TD
 ---
 
 ### 2. Type-Safe Persistence Contract: `sqlc-dev/sqlc`
-- Developers write pure, idiomatic PostgreSQL queries in `sql/queries/*.sql`.
+- Developers write pure, idiomatic PostgreSQL queries in `database/queries/*.sql`.
 - `sqlc` parses the migration DDL (`migrations/*.sql`) and queries, performs static SQL analysis and type deduction, and generates pure Go structs and query methods:
   - Generates `Querier` interface, model structs, and query execution methods.
   - Zero runtime reflection or overhead; performance matches hand-optimized Go code.
   - Query compilation breaks the build if a column is missing, renamed, or type-incompatible, shifting schema validation entirely left to compile time.
-- Integrated into project tooling via `tool ( github.com/sqlc-dev/sqlc/cmd/sqlc )` in `go.mod` and runnable via `go tool sqlc` / `mise run generate:db`.
+- Integrated into project tooling via `tool ( github.com/sqlc-dev/sqlc/cmd/sqlc )` in `go.mod` and runnable via `go tool sqlc` / `mise run generate:sqlc`.
 
 ---
 
 ### 3. Versioned Schema Migrations: `pressly/goose/v3`
-- Database schema changes are exclusively managed through sequential, versioned SQL migration files under `migrations/`:
+- Database schema changes are exclusively managed through sequential, versioned SQL migration files under `database/migrations/`:
   - Format: `<timestamp>_<description>.sql` with explicit `-- +goose Up` and `-- +goose Down` blocks.
-- Managed as a tracked Go tool directive (`github.com/pressly/goose/v3/cmd/goose`) and executed via `go tool goose` / `mise run db:migrate`.
+- Managed as a tracked Go tool directive (`github.com/pressly/goose/v3/cmd/goose`) and executed via `go tool goose` / `mise run migrate:up`.
 - Goose ensures zero drift between CI pipelines, developer environments, and target production databases with transparent rollback capabilities.
 
 ---
@@ -115,8 +115,8 @@ CREATE TABLE bookings (
     total_amount NUMERIC(12, 2) NOT NULL,
     currency VARCHAR(3) NOT NULL,
     status VARCHAR(32) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_bookings_hotel_created ON bookings (hotel_id, id DESC);

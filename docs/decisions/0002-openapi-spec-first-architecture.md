@@ -25,23 +25,23 @@ The OpenAPI specification serves as the authoritative single source of truth acr
 graph TD
     Spec["OpenAPI 3.0 Spec<br/>(api/openapi.yaml)"]
     Config["Codegen Config<br/>(oapi-codegen.yml)"]
-    Oapi["oapi-codegen v2.8.0<br/>(mise run generate:api / go tool)"]
+    Oapi["oapi-codegen v2.8.0<br/>(mise run generate:oapi / go tool)"]
 
-    subgraph Generated ["Generated Code (internal/adapter/http/generated/api.gen.go)"]
+    subgraph Generated ["Generated Code (internal/gen/openapi/api.gen.go)"]
         Models["Type-Safe Models & DTOs"]
-        ServerInterface["ServerInterface (Chi Handler Contract)"]
+        ServerInterface["StrictServerInterface (Handler Contract)"]
         HandlerMux["HandlerFromMux Register Helper"]
         EmbeddedSpec["Embedded Compressed OpenAPI Spec"]
     end
 
-    subgraph Server ["HTTP Server & Routing (internal/adapter/http)"]
+    subgraph Server ["HTTP Server & Routing (internal/adapter/httpapi)"]
         Router["Chi Router (router.go)"]
-        Handlers["Domain Handlers (internal/adapter/http/handler)"]
+        Handlers["Domain Handlers (internal/adapter/httpapi/handler)"]
     end
 
     subgraph DocsAndClients ["Docs, Interactive UI & Client Specs"]
-        SwaggerEndpoint["/openapi.json & /docs (Swagger UI)"]
-        HttpRequests["HTTP Request Specs (docs/api/requests.http)"]
+        SwaggerEndpoint["/openapi.json & /docs/ (Swagger UI)"]
+        HttpRequests["HTTP Request Specs (api/requests.http)"]
         MkDocs["MkDocs / Tech Docs Portal"]
     end
 
@@ -64,38 +64,38 @@ graph TD
 - All endpoints (e.g. `GET /healthz`), query parameters, request bodies, and response envelopes are formally defined here prior to or alongside implementation.
 
 ### 2. Automated Generation with `oapi-codegen`
-- Code generation is governed by `oapi-codegen.yaml`:
-  - `package: generated`
-  - `output: internal/adapter/http/generated/api.gen.go`
+- Code generation is governed by `oapi-codegen.yml`:
+  - `package: openapi`
+  - `output: internal/gen/openapi/api.gen.go`
   - `generate.models: true`: Emits Go structs for schema objects with JSON tags.
-  - `generate.chi-server: true`: Emits `ServerInterface` matching Chi HTTP conventions and `HandlerFromMux` helper.
+  - `generate.chi-server: true`: Emits Chi HTTP routing scaffolding and `HandlerFromMux`.
+  - `generate.strict-server: true`: Emits typed `StrictServerInterface` preventing untyped request/response errors.
   - `generate.embedded-spec: true`: Embeds the gzip-compressed OpenAPI specification binary directly into the generated Go package via `GetSpec()`.
-- Generator task is tracked as a native Go tool directive (`github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen`) and executed via `mise run generate:api`.
+- Generator task is tracked as a native Go tool directive (`github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen`) and executed via `mise run generate:oapi`.
 
 ### 3. Compile-Time Type-Safe Router Integration
 - HTTP handlers implement the generated `ServerInterface`. If the OpenAPI schema changes, compile errors immediately surface missing or altered handler signatures.
 - Handlers are registered cleanly onto Chi using `generated.HandlerFromMux(server, router)`.
 
 ### 4. Embedded Interactive Documentation & Client Specs
-- The embedded spec powers the `/openapi.json` endpoint at runtime via `generated.GetSpec()`.
-- Interactive Swagger UI is hosted at `/docs` (via embedded assets in `internal/adapter/http/handler/swagger/index.html`) and embedded within documentation portals such as MkDocs.
-- Ready-to-use HTTP client request files (`docs/api/requests.http`) mirror the schema for direct workstation testing and IDE execution.
-
+- The embedded spec powers the `/openapi.json` endpoint at runtime via `openapi.GetSpec()`.
+- Interactive Swagger UI is hosted at `/docs/` with pinned vendored assets (no external CDN) and gated away from production environments.
+- Ready-to-use HTTP client request files (`api/requests.http`) mirror the schema for direct workstation testing and IDE execution.
 ## Consequences
 
 ### Positive
 - **Single Source of Truth**: Eliminates manual synchronization between documentation and server code.
 - **Compile-Time Contract Safety**: Any change in OpenAPI parameters, payloads, or paths directly enforces corresponding handler updates at compile time.
-- **Embedded Zero-Drift Documentation**: Swagger UI and OpenAPI JSON endpoints are served directly from the compiled binary without external runtime assets or CDN coupling.
-- **Deterministic Tooling**: Version-pinned via `go.mod` `tool` directive (`v2.8.0`) and callable via `mise run generate:api`.
+- **Embedded Zero-Drift Documentation**: Swagger UI and OpenAPI JSON endpoints are served directly from the compiled binary with vendored assets, zero CDN dependencies, and strict Content-Security-Policy headers.
+- **Deterministic Tooling**: Version-pinned via `go.mod` `tool` directive (`v2.8.0`) and callable via `mise run generate:oapi`.
 - **Streamlined Client Generation**: The exact same specification can generate client SDKs, mock servers, or test suites.
 
 ### Negative
-- **Generated Code Overhead**: Requires committing or regularly generating `internal/adapter/http/generated/api.gen.go` (managed via CI/Mise tasks).
+- **Generated Code Overhead**: Requires committing or regularly generating `internal/gen/openapi/api.gen.go` (managed via CI/Mise tasks).
 - **OpenAPI Learning Curve**: Schema changes require editing YAML and understanding OpenAPI 3.0 constructs rather than directly modifying Go struct definitions.
 
 ### Neutral
-- Schema changes require running `mise run generate:api` before implementing handlers, slightly altering the developer workflow into an intentional design-first cadence.
+- Schema changes require running `mise run generate:oapi` before implementing handlers, slightly altering the developer workflow into an intentional design-first cadence.
 
 ## Alternatives Considered
 

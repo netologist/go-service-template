@@ -1,7 +1,6 @@
 @baseUrl = http://localhost:8080
 @contentType = application/json
 
-
 ### ==============================================================================
 ### Healthcheck Probe
 ### ==============================================================================
@@ -16,34 +15,7 @@ Accept: application/json
 # response.body.status == "ok"
 
 ### ==============================================================================
-### Create Hotel
-### ==============================================================================
-
-# @name CreateHotel
-POST {{baseUrl}}/api/v1/hotels
-Content-Type: {{contentType}}
-Accept: application/json
-
-{
-  "name": "G1rand Budapest Hotel",
-  "address": "100 Alpine Way",
-  "city": "Lutz"
-}
-
-###
-# Expected:
-# HTTP 200
-# response.body.length > 0
-# response.body[0].name == "Grand Budapest Hotel"
-#
-# The hotel ID is extracted below using JSONPath.
-
-
-### Capture hotelId from FindHotelByName response
-@hotelId = {{ListHotels.response.body.$[0].id}}
-
-### ==============================================================================
-### List Hotels
+### List Hotels (Read before Create)
 ### ==============================================================================
 
 # @name ListHotels
@@ -53,11 +25,28 @@ Accept: application/json
 ###
 # Expected:
 # HTTP 200
-# response.body.length > 0
-# response.body[0].name == "Grand Budapest Hotel"
-#
-# The hotel ID is extracted below using JSONPath.
+# response.body is an array of Hotel objects
 
+### ==============================================================================
+### Create Hotel
+### ==============================================================================
 
-### Capture hotelId from FindHotelByName response
-@hotelId = {{ListHotels.response.body.$[0].id}}
+# @name CreateHotel
+POST {{baseUrl}}/api/v1/hotels
+Content-Type: {{contentType}}
+Accept: application/json
+
+{
+  "name": "Grand Budapest Hotel",
+  "address": "100 Alpine Way",
+  "city": "Lutz"
+}
+
+###
+# Expected:
+# HTTP 201 Created
+# response.body.name == "Grand Budapest Hotel"
+# response.body.id is a generated UUIDv7
+
+### Capture created hotel ID
+@createdHotelId = {{CreateHotel.response.body.id}}
