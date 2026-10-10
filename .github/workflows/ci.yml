@@ -161,7 +161,7 @@ jobs:
 
       - name: Verify Go imports formatting
         run: |
-          UNFORMATTED=$(go tool goimports -local github.com/netologist/hotel-booking -l $(find . -type f -name '*.go' -not -path './vendor/*'))
+          UNFORMATTED=$(go tool goimports -local github.com/netologist/hotel-booking -l $(find . -type f -name '*.go' -not -path './vendor/*' -not -path './internal/gen/*'))
           if [ -n "$UNFORMATTED" ]; then
             echo "Error: Unformatted Go files detected:"
             echo "$UNFORMATTED"
