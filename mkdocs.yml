@@ -8,6 +8,9 @@ edit_uri: edit/main/docs/
 docs_dir: docs
 site_dir: site
 
+exclude_docs: |
+  reviews/**
+  **/.DS_Store
 theme:
   name: material
   language: en
@@ -77,7 +80,5 @@ nav:
       - ADR-0004 Configuration Management: decisions/0004-configuration-management.md
       - ADR-0005 Layer Simplification: decisions/0005-layer-simplification-and-mapping.md
       - ADR-0006 Air Live-Reload & Delve: decisions/0006-local-development-air-delve.md
-  - Reviews & Audits:
-      - Implementation Review: reviews/2026-10-08-implementation-review.md
   - Technical Debts:
       - TD-0001 CI Cache Poisoning: techdebts/0001-ci-cache-poisoning.md
