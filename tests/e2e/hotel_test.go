@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -23,7 +22,7 @@ const (
 var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 	Describe("POST /api/v1/hotels (Register Hotel)", func() {
 		It("creates a new hotel and returns HTTP 201 with generated fields", func() {
-			hotelName := fmt.Sprintf("E2E Hotel %s", uuid.NewString()[:8])
+			hotelName := "E2E Hotel " + uuid.NewString()[:8]
 			payload, err := json.Marshal(map[string]string{
 				fieldHotelName:    hotelName,
 				fieldHotelAddress: "100 Grand Boulevard",
@@ -94,7 +93,7 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 		})
 
 		It("returns HTTP 409 when attempting to register a duplicate hotel name", func() {
-			hotelName := fmt.Sprintf("E2E Unique Hotel %s", uuid.NewString()[:8])
+			hotelName := "E2E Unique Hotel " + uuid.NewString()[:8]
 			payload, err := json.Marshal(map[string]string{
 				fieldHotelName:    hotelName,
 				fieldHotelAddress: "200 Duplicate Ave",
@@ -135,7 +134,7 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 
 	Describe("GET /api/v1/hotels (List Hotels)", func() {
 		It("lists registered hotels and includes newly created hotel", func() {
-			hotelName := fmt.Sprintf("E2E Listed Hotel %s", uuid.NewString()[:8])
+			hotelName := "E2E Listed Hotel " + uuid.NewString()[:8]
 			createPayload, err := json.Marshal(map[string]string{
 				fieldHotelName:    hotelName,
 				fieldHotelAddress: "500 Ocean Drive",

@@ -143,6 +143,10 @@ components:
           type: string
           description: Application-specific error code
           example: "INVALID_HOTEL"
+        request_id:
+          type: string
+          description: Identifier of the request; quote it when reporting a server error so it can be found in the server logs
+          example: "7f3c1e2a-4b5d-4c6e-8f90-a1b2c3d4e5f6"
         errors:
           type: array
           description: List of invalid fields for validation problems

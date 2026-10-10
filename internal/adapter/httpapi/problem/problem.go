@@ -68,6 +68,15 @@ func ServiceUnavailable(detail, instance string) openapi.Problem {
 	)
 }
 
+// WithRequestID returns p annotated with the request identifier so clients can quote it
+// and operators can correlate the response with server logs.
+func WithRequestID(p openapi.Problem, requestID string) openapi.Problem {
+	if requestID != "" {
+		p.RequestId = &requestID
+	}
+	return p
+}
+
 // Respond writes an RFC 9457 problem details JSON response.
 func Respond(w http.ResponseWriter, p openapi.Problem) {
 	w.Header().Set("Content-Type", ContentTypeProblemJSON)

@@ -59,7 +59,7 @@ func runServer(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config) erro
 	return runServerWithHealth(ctx, pool, cfg, healthCheck)
 }
 
-func runServerWithHealth(
+func runServerWithHealth( //nolint:funlen // server assembly + graceful shutdown goroutine coordinator
 	ctx context.Context,
 	pool *pgxpool.Pool,
 	cfg *config.Config,
@@ -71,7 +71,10 @@ func runServerWithHealth(
 		healthHandler,
 		handler.NewHotelHandler(hotelService),
 	)
-	router := httpapi.NewRouter(handlers)
+	router := httpapi.NewRouterWithOptions(handlers, httpapi.RouterOptions{
+		CORSAllowedOrigins: cfg.CORSAllowedOrigins,
+		DocsEnabled:        cfg.DocsEnabled(),
+	})
 
 	server := &http.Server{
 		Addr:              cfg.ServerAddr(),
@@ -113,7 +116,7 @@ func runServerWithHealth(
 			}
 		}
 
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ServerShutdownTimeout)
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cfg.ServerShutdownTimeout)
 		defer cancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {

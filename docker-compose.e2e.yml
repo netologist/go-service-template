@@ -1,8 +1,13 @@
 services:
-  # Runs goose from the API image itself; no separate migration image exists.
+  # Built locally from migration stage; decoupled from production API image.
   migration:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAME:-netologist/hotel-booking}:${IMAGE_TAG:-latest}
-    entrypoint: ["sh", "-c", "goose -dir /database/migrations postgres \"$$DATABASE_URL\" up && tail -f /dev/null"]
+    image: hotel-booking-migration:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migration
+    command: ["up"]
+    restart: "no"
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-hotel_booking}?sslmode=disable
     depends_on:

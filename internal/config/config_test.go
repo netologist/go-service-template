@@ -296,3 +296,49 @@ func TestLoad_DrainTimeoutZeroAllowed(t *testing.T) {
 	require.NotNil(t, cfg)
 	assert.Equal(t, time.Duration(0), cfg.ServerDrainTimeout)
 }
+
+func TestLoad_CORSAllowedOrigins(t *testing.T) {
+	t.Run("valid origins", func(t *testing.T) {
+		resetEnv(t)
+		t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com,http://localhost:3000")
+
+		cfg, err := config.Load()
+		require.NoError(t, err)
+		require.NotNil(t, cfg)
+		assert.Equal(t, []string{"https://app.example.com", "http://localhost:3000"}, cfg.CORSAllowedOrigins)
+	})
+
+	t.Run("wildcard rejected", func(t *testing.T) {
+		resetEnv(t)
+		t.Setenv("CORS_ALLOWED_ORIGINS", "https://*,http://localhost:3000")
+
+		cfg, err := config.Load()
+		require.Error(t, err)
+		assert.Nil(t, cfg)
+		assert.ErrorContains(t, err, errValidationFailed)
+	})
+
+	t.Run("invalid url rejected", func(t *testing.T) {
+		resetEnv(t)
+		t.Setenv("CORS_ALLOWED_ORIGINS", "not-a-valid-url")
+
+		cfg, err := config.Load()
+		require.Error(t, err)
+		assert.Nil(t, cfg)
+		assert.ErrorContains(t, err, errValidationFailed)
+	})
+}
+
+func TestConfig_DocsEnabled(t *testing.T) {
+	cfg := &config.Config{Environment: "development"}
+	assert.True(t, cfg.DocsEnabled())
+
+	cfg.Environment = "staging"
+	assert.True(t, cfg.DocsEnabled())
+
+	cfg.Environment = "test"
+	assert.True(t, cfg.DocsEnabled())
+
+	cfg.Environment = "production"
+	assert.False(t, cfg.DocsEnabled())
+}

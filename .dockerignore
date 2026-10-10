@@ -1,0 +1,16 @@
+.git
+.github
+.env*
+*.out
+*.log
+bin/
+tmp/
+dist/
+.idea/
+.vscode/
+tests/e2e/
+Dockerfile*
+docker-compose*.yml
+mise.toml
+Makefile
+README.md

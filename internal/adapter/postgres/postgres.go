@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,7 +25,7 @@ type PoolConfig struct {
 // NewPool initializes a PostgreSQL connection pool using PoolConfig.
 func NewPool(ctx context.Context, config PoolConfig) (*pgxpool.Pool, error) {
 	if config.DatabaseURL == "" {
-		return nil, fmt.Errorf("database url cannot be null")
+		return nil, errors.New("database url cannot be null")
 	}
 
 	cfg, err := pgxpool.ParseConfig(config.DatabaseURL)

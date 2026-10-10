@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/netologist/hotel-booking/internal/domain"
 	"github.com/netologist/hotel-booking/internal/gen/sqlc"
 )
@@ -50,7 +51,7 @@ func (h *hotelRepository) Create(ctx context.Context, hotel domain.Hotel) (domai
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return domain.Hotel{}, fmt.Errorf("%w: %s", domain.ErrHotelAlreadyExists, pgErr.Detail)
+			return domain.Hotel{}, fmt.Errorf("%w: %w", domain.ErrHotelAlreadyExists, err)
 		}
 		return domain.Hotel{}, err
 	}

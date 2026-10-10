@@ -33,7 +33,7 @@ func (h *HotelHandler) CreateHotel(
 			}, nil
 		}
 		if errors.Is(err, domain.ErrHotelAlreadyExists) {
-			prob := problem.Conflict(err.Error(), "/api/v1/hotels", "HOTEL_ALREADY_EXISTS")
+			prob := problem.Conflict(domain.ErrHotelAlreadyExists.Error(), "/api/v1/hotels", "HOTEL_ALREADY_EXISTS")
 			return openapi.CreateHotel409ApplicationProblemPlusJSONResponse{
 				ConflictApplicationProblemPlusJSONResponse: openapi.ConflictApplicationProblemPlusJSONResponse(prob),
 			}, nil

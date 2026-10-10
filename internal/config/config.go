@@ -7,11 +7,17 @@ import (
 	"github.com/caarlos0/env/v11"
 )
 
+const environmentProduction = "production"
+
 type Config struct {
 	Environment string `env:"APP_ENV" envDefault:"development" validate:"required,oneof=development staging production test"` //nolint:lll // struct tags cannot be split across lines
 	HTTPPort    int    `env:"HTTP_PORT" envDefault:"8080" validate:"required,min=1,max=65535"`
 	DatabaseURL string `env:"DATABASE_URL" validate:"required"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"info" validate:"required,oneof=debug info warn error"`
+
+	// CORSAllowedOrigins lists the exact origins (scheme://host[:port]) allowed to call the API from a browser.
+	// Empty disables CORS entirely. Wildcards are rejected.
+	CORSAllowedOrigins []string `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," validate:"dive,http_url,excludes=*"` //nolint:lll // struct tags cannot be split across lines
 
 	// HTTP Server settings (defaults from cmd/server/main.go)
 	ServerShutdownTimeout   time.Duration `env:"SERVER_SHUTDOWN_TIMEOUT" envDefault:"10s" validate:"required"`
@@ -33,6 +39,12 @@ type Config struct {
 // ServerAddr returns the listening address formatted as ":<port>".
 func (c *Config) ServerAddr() string {
 	return fmt.Sprintf(":%d", c.HTTPPort)
+}
+
+// DocsEnabled reports whether the Swagger UI and the OpenAPI document are served.
+// They are never exposed in production.
+func (c *Config) DocsEnabled() bool {
+	return c.Environment != environmentProduction
 }
 
 // Load populates configuration from the environment and validates struct constraints.
