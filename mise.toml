@@ -5,7 +5,7 @@ go = "1.27.2"
 _.file = ".env"
 POSTGRES_USER = "postgres"
 POSTGRES_PASSWORD = "S3cr3tP455w0rD"
-POSTGRES_DB = "hotel_booking"
+POSTGRES_DB = "service_db"
 DATABASE_URL = "postgres://{{ env.POSTGRES_USER }}:{{ env.POSTGRES_PASSWORD }}@localhost:5432/{{ env.POSTGRES_DB }}?sslmode=disable"
 GOOSE_DRIVER = "postgres"
 GOOSE_MIGRATION_DIR = "./database/migrations"
@@ -109,7 +109,7 @@ description = "Stop and clean local dependencies using Docker Compose"
 run = "docker compose down -v"
 
 [tasks.psql]
-run = "docker compose exec postgres psql -U postgres -d hotel_booking"
+run = "docker compose exec postgres psql -U postgres -d service_db"
 
 [tasks."generate"]
 description = "Run all code generators (OpenAPI, SQL queries, Mocks)"

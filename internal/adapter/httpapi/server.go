@@ -7,16 +7,16 @@ import (
 
 type Server struct {
 	*handler.HealthCheck
-	*handler.HotelHandler
+	*handler.ItemHandler
 }
 
 func NewServer(
 	healthCheck *handler.HealthCheck,
-	hotelHandler *handler.HotelHandler,
+	itemHandler *handler.ItemHandler,
 ) *Server {
 	return &Server{
-		HealthCheck:  healthCheck,
-		HotelHandler: hotelHandler,
+		HealthCheck: healthCheck,
+		ItemHandler: itemHandler,
 	}
 }
 

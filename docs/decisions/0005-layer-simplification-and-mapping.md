@@ -10,14 +10,14 @@ Accepted
 In hexagonal or clean architecture codebases, teams frequently introduce boilerplate layers and mirror DTOs to preserve boundary isolation:
 
 1. **Repetitive Model Mapping (Ceremony over Utility)**:
-   A single entity (e.g., `Hotel`) was mapped across four distinct representations:
-   `sqlc.Hotel` $\rightarrow$ `domain.Hotel` $\rightarrow$ `usecase.HotelOutput` / `CreateHotelOutput` $\rightarrow$ `openapi.Hotel`.
-   Here, `usecase.HotelOutput`, `CreateHotelOutput`, and `CreateHotelInput` were identical structural mirrors of `domain.Hotel` with no added semantic behavior or distinct contracts.
+   A single entity (e.g., `Item`) was mapped across four distinct representations:
+   `sqlc.Item` $\rightarrow$ `domain.Item` $\rightarrow$ `usecase.ItemOutput` / `CreateItemOutput` $\rightarrow$ `openapi.Item`.
+   Here, `usecase.ItemOutput`, `CreateItemOutput`, and `CreateItemInput` were identical structural mirrors of `domain.Item` with no added semantic behavior or distinct contracts.
 
 2. **Unnecessary Heap Allocations & Pointer Semantics**:
-   - Repository interfaces returned pointer slices (`[]*domain.Hotel`), requiring individual pointer allocations per item.
+   - Repository interfaces returned pointer slices (`[]*domain.Item`), requiring individual pointer allocations per item.
    - Database columns defined as `NOT NULL` (`created_at`, `updated_at`) were mapped to `*time.Time` pointers in domain models.
-   - Mapping functions (`toDomainHotel`) took addresses of sqlc row fields (`&row.CreatedAt.Time`), creating unnecessary heap escapes.
+   - Mapping functions (`toDomainItem`) took addresses of sqlc row fields (`&row.CreatedAt.Time`), creating unnecessary heap escapes.
 
 3. **Driver-Specific Type Leakage (`pgtype`)**:
    By default, `sqlc` generates `pgtype.UUID` and `pgtype.Timestamptz` for PostgreSQL types. This forced adapter code to perform manual byte slice slicing and struct unwrapping (`uuid.UUID(row.ID.Bytes)`, `&row.CreatedAt.Time`).
@@ -32,13 +32,13 @@ We needed to eliminate ceremony, reduce cognitive load and allocations, and main
 We streamline internal layer boundaries and type representations through the following principles:
 
 ### 1. Remove Mirror DTOs in Use Cases
-- Eliminate intermediate mirror structs (`HotelOutput`, `CreateHotelOutput`, `CreateHotelInput`) in `internal/usecase`.
-- Use cases accept standard primitive/domain inputs (e.g., `CreateHotel(ctx, name, address, city string)`) and return canonical `domain.Hotel` values.
-- HTTP handlers map directly between OpenAPI request/response types (`openapi.CreateHotelRequest`, `openapi.Hotel`) and `domain.Hotel`.
+- Eliminate intermediate mirror structs (`ItemOutput`, `CreateItemOutput`, `CreateItemInput`) in `internal/usecase`.
+- Use cases accept standard primitive/domain inputs (e.g., `CreateItem(ctx, name, description string, price int64)`) and return canonical `domain.Item` values.
+- HTTP handlers map directly between OpenAPI request/response types (`openapi.CreateItemRequest`, `openapi.Item`) and `domain.Item`.
 
 ### 2. Value Semantics over Unnecessary Pointers
-- In `domain.Hotel`, use non-pointer `time.Time` values for `CreatedAt` and `UpdatedAt` since both columns are `NOT NULL` in the schema.
-- `domain.HotelRepository` signatures return and accept value types and slices (`[]domain.Hotel`, `domain.Hotel`) instead of pointer slices (`[]*domain.Hotel`).
+- In `domain.Item`, use non-pointer `time.Time` values for `CreatedAt` and `UpdatedAt` since both columns are `NOT NULL` in the schema.
+- `domain.ItemRepository` signatures return and accept value types and slices (`[]domain.Item`, `domain.Item`) instead of pointer slices (`[]*domain.Item`).
 - Avoid taking field addresses of row structs during mapping, eliminating heap escapes.
 
 ### 3. Native Type Overrides in `sqlc.yml`
@@ -56,14 +56,13 @@ We streamline internal layer boundaries and type representations through the fol
 ```mermaid
 graph LR
     subgraph "Before (4 Layers of Mapping)"
-        S1["sqlc.Hotel (pgtype)"] -->|toDomainHotel| D1["*domain.Hotel (*time.Time)"]
-        D1 -->|toOutput| U1["usecase.HotelOutput"]
-        U1 -->|toHotelResponse| O1["openapi.Hotel"]
-    end
+        S1["sqlc.Item (pgtype)"] -->|toDomainItem| D1["*domain.Item (*time.Time)"]
+        D1 -->|toOutput| U1["usecase.ItemOutput"]
+        U1 -->|toItemResponse| O1["openapi.Item"]
 
     subgraph "After (Boring & Direct)"
-        S2["sqlc.Hotel (native uuid & time.Time)"] -->|toDomainHotel (value copy)| D2["domain.Hotel (time.Time)"]
-        D2 -->|toHotelResponse| O2["openapi.Hotel"]
+        S2["sqlc.Item (native uuid & time.Time)"] -->|toDomainItem (value copy)| D2["domain.Item (time.Time)"]
+        D2 -->|toItemResponse| O2["openapi.Item"]
     end
 ```
 
@@ -72,11 +71,11 @@ graph LR
 ### Positive
 - **Reduced Ceremony & Code Volume**: Deleted redundant structs and mapper functions in the usecase layer.
 - **Improved Performance**: Switched from pointer slices and field addresses to value semantics, avoiding heap allocations on query results.
-- **Cleaner Persistence Adapter**: Database repository code maps directly between `sqlc.Hotel` and `domain.Hotel` using native Go types with zero driver-specific casting.
-- **Lower Cognitive Load**: New developers only navigate `domain.Hotel` and `openapi.Hotel`, rather than three competing struct variants.
+- **Cleaner Persistence Adapter**: Database repository code maps directly between `sqlc.Item` and `domain.Item` using native Go types with zero driver-specific casting.
+- **Lower Cognitive Load**: New developers only navigate `domain.Item` and `openapi.Item`, rather than three competing struct variants.
 
 ### Negative
-- **Handler Direct Coupling to Domain Entity**: Handlers now import `domain` to read `domain.Hotel` returned by use cases. This is an accepted and standard practice in hexagonal Go services.
+- **Handler Direct Coupling to Domain Entity**: Handlers now import `domain` to read `domain.Item` returned by use cases. This is an accepted and standard practice in hexagonal Go services.
 
 ## Alternatives Considered
 

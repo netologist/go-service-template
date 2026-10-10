@@ -10,11 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
-type Hotel struct {
-	ID        uuid.UUID
-	Name      string
-	Address   string
-	City      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+type Item struct {
+	ID          uuid.UUID
+	Name        string
+	Description string
+	Price       int64
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }

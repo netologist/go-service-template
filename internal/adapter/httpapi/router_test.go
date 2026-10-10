@@ -17,12 +17,12 @@ import (
 	"github.com/netologist/go-service-template/internal/gen/openapi"
 )
 
-func newTestRouter(t *testing.T, opts httpapi.RouterOptions) (http.Handler, *usecasemocks.MockHotelService) {
+func newTestRouter(t *testing.T, opts httpapi.RouterOptions) (http.Handler, *usecasemocks.MockItemService) {
 	t.Helper()
-	mockService := usecasemocks.NewMockHotelService(t)
+	mockService := usecasemocks.NewMockItemService(t)
 	server := httpapi.NewServer(
 		handler.NewHealthCheck(),
-		handler.NewHotelHandler(mockService),
+		handler.NewItemHandler(mockService),
 	)
 	return httpapi.NewRouterWithOptions(server, opts), mockService
 }
@@ -51,7 +51,7 @@ func TestRouter_CORS_ConfiguredAndNarrow(t *testing.T) {
 
 	t.Run("allowed origin preflight succeeds", func(t *testing.T) {
 		t.Parallel()
-		req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/api/v1/hotels", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/api/v1/items", nil)
 		req.Header.Set("Origin", allowedOrigin)
 		req.Header.Set("Access-Control-Request-Method", http.MethodPost)
 		rec := httptest.NewRecorder()
@@ -62,7 +62,7 @@ func TestRouter_CORS_ConfiguredAndNarrow(t *testing.T) {
 
 	t.Run("disallowed origin is rejected", func(t *testing.T) {
 		t.Parallel()
-		req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/api/v1/hotels", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/api/v1/items", nil)
 		req.Header.Set("Origin", "https://attacker.com")
 		req.Header.Set("Access-Control-Request-Method", http.MethodPost)
 		rec := httptest.NewRecorder()
@@ -119,11 +119,11 @@ func TestRouter_InternalServerError_GenericMessageAndRequestID(t *testing.T) {
 
 	rawDBError := errors.New("pq: password authentication failed for user \"postgres\"")
 	mockService.EXPECT().
-		FindHotels(mock.Anything).
+		FindItems(mock.Anything).
 		Return(nil, rawDBError).
 		Once()
 
-	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/hotels", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/items", nil)
 	req.Header.Set("X-Request-Id", "client-trace-12345")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)

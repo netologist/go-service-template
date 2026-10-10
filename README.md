@@ -1,6 +1,6 @@
 # Go Service Template
 
-A production-grade, battle-tested Go service template built with Hexagonal Architecture (ports & adapters), OpenAPI spec-first code generation, PostgreSQL persistence with UUIDv7, hermetic toolchains (Mise), and a zero-trust CI/CD pipeline. Includes a fully implemented, working reference domain (Hotel Management) demonstrating the architecture end-to-end.
+A production-grade, battle-tested Go service template built with Hexagonal Architecture (ports & adapters), OpenAPI spec-first code generation, PostgreSQL persistence with UUIDv7, hermetic toolchains (Mise), and a zero-trust CI/CD pipeline. Includes a fully implemented, working reference domain (Items Catalog) demonstrating the architecture end-to-end.
 
 ## Architecture & Design Decisions
 
@@ -84,7 +84,7 @@ The server starts on `http://localhost:8080`.
 - Health check probe: `GET http://localhost:8080/healthz`
 - Swagger UI (development only): `GET http://localhost:8080/docs/`
 - OpenAPI Specification: `GET http://localhost:8080/openapi.json`
-- Hotels API: `GET /api/v1/hotels`, `POST /api/v1/hotels`
+- Items API: `GET /api/v1/items`, `POST /api/v1/items`
 
 ## Development Commands
 

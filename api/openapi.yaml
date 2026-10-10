@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: Hotel Booking Platform API
-  description: Clean Architecture REST API for hotel management.
+  title: Go Service Template API
+  description: Clean Architecture REST API template demonstrating ports & adapters, OpenAPI code generation, and PostgreSQL persistence.
   version: 1.0.0
 paths:
   /healthz:
@@ -24,47 +24,47 @@ paths:
                     format: date-time
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/hotels:
+  /api/v1/items:
     get:
-      summary: Find a hotel based on its name or list all hotels
-      operationId: findHotels
+      summary: Find an item based on its name or list all items
+      operationId: findItems
       parameters:
         - name: name
           in: query
           required: false
-          description: Hotel name query string
+          description: Item name query string
           schema:
             type: string
-            example: "Budapest"
+            example: "Widget"
       responses:
         '200':
-          description: Matching hotels list
+          description: Matching items list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Hotel'
+                  $ref: '#/components/schemas/Item'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
     post:
-      summary: Register a new hotel
-      operationId: createHotel
+      summary: Register a new item
+      operationId: createItem
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateHotelRequest'
+              $ref: '#/components/schemas/CreateItemRequest'
       responses:
         '201':
-          description: Hotel registered successfully
+          description: Item registered successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Hotel'
+                $ref: '#/components/schemas/Item'
         '400':
           $ref: '#/components/responses/BadRequest'
         '409':
@@ -138,11 +138,11 @@ components:
           type: string
           format: uri-reference
           description: A URI reference that identifies the specific occurrence of the problem
-          example: "/api/v1/hotels"
+          example: "/api/v1/items"
         code:
           type: string
           description: Application-specific error code
-          example: "INVALID_HOTEL"
+          example: "INVALID_ITEM"
         request_id:
           type: string
           description: Identifier of the request; quote it when reporting a server error so it can be found in the server logs
@@ -152,13 +152,14 @@ components:
           description: List of invalid fields for validation problems
           items:
             $ref: '#/components/schemas/ValidationError'
-    Hotel:
+
+    Item:
       type: object
       required:
         - id
         - name
-        - address
-        - city
+        - description
+        - price
         - created_at
         - updated_at
       properties:
@@ -167,13 +168,15 @@ components:
           format: uuid
         name:
           type: string
-          example: "Grand Budapest Hotel"
-        address:
+          example: "Mechanical Keyboard"
+        description:
           type: string
-          example: "100 Alpine Way"
-        city:
-          type: string
-          example: "Lutz"
+          example: "Ergonomic hot-swappable mechanical keyboard"
+        price:
+          type: integer
+          format: int64
+          description: Price in cents (e.g. 9900 = $99.00)
+          example: 9900
         created_at:
           type: string
           format: date-time
@@ -181,25 +184,23 @@ components:
           type: string
           format: date-time
 
-    CreateHotelRequest:
+    CreateItemRequest:
       type: object
       required:
         - name
-        - address
-        - city
+        - price
       properties:
         name:
           type: string
           minLength: 2
           maxLength: 255
-          example: "Grand Budapest Hotel"
-        address:
+          example: "Mechanical Keyboard"
+        description:
           type: string
-          minLength: 2
-          maxLength: 255
-          example: "100 Alpine Way"
-        city:
-          type: string
-          minLength: 2
-          maxLength: 100
-          example: "Lutz"
+          maxLength: 1000
+          example: "Ergonomic hot-swappable mechanical keyboard"
+        price:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 9900

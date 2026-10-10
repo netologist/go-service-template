@@ -14,24 +14,26 @@ import (
 )
 
 const (
-	fieldHotelName    = "name"
-	fieldHotelAddress = "address"
-	fieldHotelCity    = "city"
+	fieldItemName        = "name"
+	fieldItemDescription = "description"
+	fieldItemPrice       = "price"
 )
 
-var _ = Describe("Hotels API (/api/v1/hotels)", func() {
-	Describe("POST /api/v1/hotels (Register Hotel)", func() {
-		It("creates a new hotel and returns HTTP 201 with generated fields", func() {
-			hotelName := "E2E Hotel " + uuid.NewString()[:8]
-			payload, err := json.Marshal(map[string]string{
-				fieldHotelName:    hotelName,
-				fieldHotelAddress: "100 Grand Boulevard",
-				fieldHotelCity:    "Metropolis",
+var _ = Describe("Items API (/api/v1/items)", func() {
+	Describe("POST /api/v1/items (Register Item)", func() {
+		It("creates a new item and returns HTTP 201 with generated fields", func() {
+			itemName := "E2E Item " + uuid.NewString()[:8]
+			desc := "High quality testing item"
+			price := int64(4999)
+			payload, err := json.Marshal(map[string]any{
+				fieldItemName:        itemName,
+				fieldItemDescription: desc,
+				fieldItemPrice:       price,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
 			resp, err := httpClient.Post(
-				baseURL+"/api/v1/hotels",
+				baseURL+"/api/v1/items",
 				"application/json",
 				bytes.NewReader(payload),
 			)
@@ -41,22 +43,22 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 			Expect(resp.Header.Get("Content-Type")).To(ContainSubstring("application/json"))
 
-			var created openapi.Hotel
+			var created openapi.Item
 			err = json.NewDecoder(resp.Body).Decode(&created)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(created.Id).NotTo(Equal(uuid.Nil))
-			Expect(created.Name).To(Equal(hotelName))
-			Expect(created.Address).To(Equal("100 Grand Boulevard"))
-			Expect(created.City).To(Equal("Metropolis"))
+			Expect(created.Name).To(Equal(itemName))
+			Expect(created.Description).To(Equal(desc))
+			Expect(created.Price).To(Equal(price))
 			Expect(created.CreatedAt).NotTo(BeNil())
 			Expect(created.UpdatedAt).NotTo(BeNil())
 		})
 
 		It("returns HTTP 400 when body has validation errors", func() {
-			payload := `{"name":"","address":"","city":""}`
+			payload := `{"name":"","description":"","price":-10}`
 			resp, err := httpClient.Post(
-				baseURL+"/api/v1/hotels",
+				baseURL+"/api/v1/items",
 				"application/json",
 				strings.NewReader(payload),
 			)
@@ -75,7 +77,7 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 
 		It("returns HTTP 400 when body is malformed JSON", func() {
 			resp, err := httpClient.Post(
-				baseURL+"/api/v1/hotels",
+				baseURL+"/api/v1/items",
 				"application/json",
 				strings.NewReader(`{invalid`),
 			)
@@ -92,17 +94,17 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 			Expect(prob.Detail).NotTo(BeNil())
 		})
 
-		It("returns HTTP 409 when attempting to register a duplicate hotel name", func() {
-			hotelName := "E2E Unique Hotel " + uuid.NewString()[:8]
-			payload, err := json.Marshal(map[string]string{
-				fieldHotelName:    hotelName,
-				fieldHotelAddress: "200 Duplicate Ave",
-				fieldHotelCity:    "Gotham",
+		It("returns HTTP 409 when attempting to register a duplicate item name", func() {
+			itemName := "E2E Unique Item " + uuid.NewString()[:8]
+			payload, err := json.Marshal(map[string]any{
+				fieldItemName:        itemName,
+				fieldItemDescription: "Unique item description",
+				fieldItemPrice:       1999,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
 			resp1, err := httpClient.Post(
-				baseURL+"/api/v1/hotels",
+				baseURL+"/api/v1/items",
 				"application/json",
 				bytes.NewReader(payload),
 			)
@@ -112,7 +114,7 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 
 			// Second request with same name
 			resp2, err := httpClient.Post(
-				baseURL+"/api/v1/hotels",
+				baseURL+"/api/v1/items",
 				"application/json",
 				bytes.NewReader(payload),
 			)
@@ -128,22 +130,22 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 			Expect(prob.Status).To(Equal(http.StatusConflict))
 			Expect(prob.Title).To(Equal("Conflict"))
 			Expect(prob.Code).NotTo(BeNil())
-			Expect(*prob.Code).To(Equal("HOTEL_ALREADY_EXISTS"))
+			Expect(*prob.Code).To(Equal("ITEM_ALREADY_EXISTS"))
 		})
 	})
 
-	Describe("GET /api/v1/hotels (List Hotels)", func() {
-		It("lists registered hotels and includes newly created hotel", func() {
-			hotelName := "E2E Listed Hotel " + uuid.NewString()[:8]
-			createPayload, err := json.Marshal(map[string]string{
-				fieldHotelName:    hotelName,
-				fieldHotelAddress: "500 Ocean Drive",
-				fieldHotelCity:    "Miami Beach",
+	Describe("GET /api/v1/items (List Items)", func() {
+		It("lists registered items and includes newly created item", func() {
+			itemName := "E2E Listed Item " + uuid.NewString()[:8]
+			createPayload, err := json.Marshal(map[string]any{
+				fieldItemName:        itemName,
+				fieldItemDescription: "Listed item description",
+				fieldItemPrice:       2500,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
 			createResp, err := httpClient.Post(
-				baseURL+"/api/v1/hotels",
+				baseURL+"/api/v1/items",
 				"application/json",
 				bytes.NewReader(createPayload),
 			)
@@ -152,28 +154,28 @@ var _ = Describe("Hotels API (/api/v1/hotels)", func() {
 			Expect(createResp.StatusCode).To(Equal(http.StatusCreated))
 
 			// Query list
-			listResp, err := httpClient.Get(baseURL + "/api/v1/hotels")
+			listResp, err := httpClient.Get(baseURL + "/api/v1/items")
 			Expect(err).NotTo(HaveOccurred())
 			defer func() { _ = listResp.Body.Close() }()
 
 			Expect(listResp.StatusCode).To(Equal(http.StatusOK))
 			Expect(listResp.Header.Get("Content-Type")).To(ContainSubstring("application/json"))
 
-			var hotels []openapi.Hotel
-			err = json.NewDecoder(listResp.Body).Decode(&hotels)
+			var items []openapi.Item
+			err = json.NewDecoder(listResp.Body).Decode(&items)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(hotels).NotTo(BeEmpty())
+			Expect(items).NotTo(BeEmpty())
 
-			var found *openapi.Hotel
-			for i := range hotels {
-				if hotels[i].Name == hotelName {
-					found = &hotels[i]
+			var found *openapi.Item
+			for i := range items {
+				if items[i].Name == itemName {
+					found = &items[i]
 					break
 				}
 			}
-			Expect(found).NotTo(BeNil(), "expected created hotel to be found in list")
-			Expect(found.Address).To(Equal("500 Ocean Drive"))
-			Expect(found.City).To(Equal("Miami Beach"))
+			Expect(found).NotTo(BeNil(), "expected created item to be found in list")
+			Expect(found.Description).To(Equal("Listed item description"))
+			Expect(found.Price).To(Equal(int64(2500)))
 		})
 	})
 })

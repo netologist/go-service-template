@@ -9,8 +9,8 @@ import (
 )
 
 type Querier interface {
-	CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error)
-	ListHotels(ctx context.Context) ([]Hotel, error)
+	CreateItem(ctx context.Context, arg CreateItemParams) (Item, error)
+	ListItems(ctx context.Context) ([]Item, error)
 }
 
 var _ Querier = (*Queries)(nil)

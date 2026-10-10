@@ -74,9 +74,9 @@ Update line 175 where `goimports -local` is validated:
 
 ---
 
-## 4. Replacing the Reference Domain ("Hotel") with Your Business Domain
+## 4. Replacing the Reference Domain ("Item") with Your Business Domain
 
-This template includes a fully functional, production-ready reference domain (**Hotels**) to demonstrate Clean Architecture in practice (Domain Invariants $\to$ Use Case $\to$ HTTP Strict Handlers $\to$ PostgreSQL sqlc $\to$ E2E Tests).
+This template includes a fully functional, production-ready reference domain (**Items**) to demonstrate Clean Architecture in practice (Domain Invariants $\to$ Use Case $\to$ HTTP Strict Handlers $\to$ PostgreSQL sqlc $\to$ E2E Tests).
 
 To implement your actual business entity (e.g. `Order`, `User`, `Payment`):
 

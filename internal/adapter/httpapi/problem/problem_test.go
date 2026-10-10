@@ -47,18 +47,18 @@ func TestBadRequest(t *testing.T) {
 }
 
 func TestConflict(t *testing.T) {
-	p := problem.Conflict("already exists", "/api/v1/hotels", "HOTEL_ALREADY_EXISTS")
+	p := problem.Conflict("already exists", "/api/v1/items", "ITEM_ALREADY_EXISTS")
 
 	assert.Equal(t, http.StatusConflict, p.Status)
 	assert.Equal(t, "Conflict", p.Title)
 	require.NotNil(t, p.Detail)
 	assert.Equal(t, "already exists", *p.Detail)
 	require.NotNil(t, p.Code)
-	assert.Equal(t, "HOTEL_ALREADY_EXISTS", *p.Code)
+	assert.Equal(t, "ITEM_ALREADY_EXISTS", *p.Code)
 }
 
 func TestInternalServerError(t *testing.T) {
-	p := problem.InternalServerError("unexpected failure", "/api/v1/hotels")
+	p := problem.InternalServerError("unexpected failure", "/api/v1/items")
 
 	assert.Equal(t, http.StatusInternalServerError, p.Status)
 	assert.Equal(t, "Internal Server Error", p.Title)

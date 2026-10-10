@@ -71,9 +71,9 @@ graph TD
 │
 ├── database/                      # Database schema and persistence definitions
 │   ├── migrations/                # Goose migration files (Raw SQL DDL)
-│   │   └── 20261006111444_create_hotels.sql
+│   │   └── 20261006111444_create_items.sql
 │   └── queries/                   # Raw SQL queries compiled by sqlc
-│       └── hotels.sql
+│       └── items.sql
 │
 ├── docs/                          # Architecture, decisions, and system documentation
 │   ├── decisions/                 # Architecture Decision Records (ADRs)
@@ -96,8 +96,8 @@ graph TD
 │   │   │   ├── handler/           # HTTP handlers implementing OpenAPI StrictServer interface
 │   │   │   │   ├── healthcheck.go
 │   │   │   │   ├── healthcheck_test.go
-│   │   │   │   ├── hotel.go
-│   │   │   │   ├── hotel_test.go
+│   │   │   │   ├── item.go
+│   │   │   │   ├── item_test.go
 │   │   │   │   └── helper_test.go
 │   │   │   ├── problem/           # RFC 7807 / RFC 9457 Problem Details error formatter
 │   │   │   │   ├── problem.go
@@ -110,8 +110,8 @@ graph TD
 │   │   │   ├── security.go        # Security header and CORS definitions
 │   │   │   └── server.go          # HTTP server wrapper with timeout configurations
 │   │   └── postgres/              # PostgreSQL persistence adapter
-│   │       ├── hotel.go           # HotelRepository implementation using pgxpool & sqlc
-│   │       ├── hotel_test.go      # Repository unit and mapping tests
+│   │       ├── item.go            # ItemRepository implementation using pgxpool & sqlc
+│   │       ├── item_test.go       # Repository unit and mapping tests
 │   │       ├── postgres.go        # pgxpool connection lifecycle and health check
 │   │       └── postgres_test.go   # Connection error and ping tests
 │   │
@@ -121,9 +121,9 @@ graph TD
 │   │   └── validate.go            # Custom struct validation using go-playground/validator
 │   │
 │   ├── domain/                    # Pure domain models and ports (interfaces)
-│   │   ├── errors.go              # Sentinel domain errors (ErrInvalidHotel, ErrConflict, etc.)
-│   │   ├── hotel.go               # Domain entity, business invariants, and Repository/Service ports
-│   │   └── hotel_test.go          # Domain constructor and invariant unit tests
+│   │   ├── errors.go              # Sentinel domain errors (ErrInvalidItem, ErrItemAlreadyExists, etc.)
+│   │   ├── item.go                # Domain entity, business invariants, and Repository/Service ports
+│   │   └── item_test.go           # Domain constructor and invariant unit tests
 │   │
 │   ├── gen/                       # Generated code (NEVER edit manually)
 │   │   ├── mocks/                 # Auto-generated unit test mocks (Mockery)
@@ -131,14 +131,14 @@ graph TD
 │   │   └── sqlc/                  # Auto-generated type-safe PostgreSQL queries
 │   │
 │   └── usecase/                   # Application business use cases
-│       ├── hotel.go               # HotelService implementation and orchestration
-│       └── hotel_test.go          # Use case unit tests using domain mocks
+│       ├── item.go                # ItemService implementation and orchestration
+│       └── item_test.go           # Use case unit tests using domain mocks
 │
 ├── tests/                         # Integration and End-to-End suites
 │   └── e2e/                       # Ginkgo v2 & Gomega BDD end-to-end tests
 │       ├── e2e_suite_test.go      # Ginkgo suite bootstrap and lifecycle hooks
 │       ├── healthz_test.go        # Health probe verification
-│       └── hotel_test.go          # CRUD lifecycle E2E scenarios against running service
+│       └── item_test.go           # CRUD lifecycle E2E scenarios against running service
 │
 └── .vscode/                       # VS Code workspace settings and debugging launches
     ├── launch.json                # Delve debug targets (server, unit tests, E2E)
@@ -164,15 +164,15 @@ graph TD
 - Holds pure domain entities, value objects, and business rules.
 - **Strict Invariants**:
   - Contains **zero third-party imports** (standard library only, except UUID if used as an identity primitive).
-  - Domain constructors (`NewHotel(...)`) validate business invariants (e.g., non-empty strings, string length boundaries, data trimming).
+  - Domain constructors (`NewItem(...)`) validate business invariants (e.g., non-empty strings, string length boundaries, data trimming, non-negative price).
   - Declares **Ports** (interfaces):
-    - `HotelRepository`: Contract for storage operations.
-    - `HotelService`: Contract for business use cases.
-  - Declares **Sentinel Domain Errors**: `ErrInvalidHotel`, `ErrHotelNotFound`, `ErrConflict`.
+    - `ItemRepository`: Contract for storage operations.
+    - `ItemService`: Contract for business use cases.
+  - Declares **Sentinel Domain Errors**: `ErrInvalidItem`, `ErrItemAlreadyExists`, `ErrItemNotFound`.
 
 ### 3.3. `internal/usecase/` (Application Layer)
 - Implements application business logic and orchestrates domain operations.
-- Interacts strictly with repository interfaces (`domain.HotelRepository`).
+- Interacts strictly with repository interfaces (`domain.ItemRepository`).
 - Contains no HTTP or SQL details; unit-tested thoroughly using generated mocks from `internal/gen/mocks`.
 
 ### 3.4. `internal/adapter/httpapi/` (Driving HTTP Adapter)
@@ -186,7 +186,7 @@ graph TD
 ### 3.5. `internal/adapter/postgres/` (Driven Persistence Adapter)
 - Implements repository interfaces using `pgxpool.Pool` and `sqlc`-generated queries.
 - Manages PostgreSQL error mapping (e.g., mapping Postgres error code `23505` to `domain.ErrConflict`).
-- Maps raw database rows directly into domain entities (`toDomainHotel`).
+- Maps raw database rows directly into domain entities (`toDomainItem`).
 
 ### 3.6. `internal/config/` (Configuration)
 - Manages application configuration loaded strictly from environment variables using `caarlos0/env/v11`.
@@ -200,7 +200,7 @@ graph TD
 
 ### 3.8. `database/` (Data Schemas)
 - `migrations/`: Versioned SQL migration files managed by Goose.
-- `queries/`: Clean, hand-crafted SQL queries annotated with sqlc tags (`-- name: ListHotels :many`).
+- `queries/`: Clean, hand-crafted SQL queries annotated with sqlc tags (`-- name: ListItems :many`).
 
 ### 3.9. `tests/e2e/` (Black-Box Verification)
 - Ginkgo v2 and Gomega BDD tests that treat the entire application as a black box.
