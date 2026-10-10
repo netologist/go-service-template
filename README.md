@@ -17,6 +17,7 @@ A production-grade, battle-tested Go service template built with Hexagonal Archi
 - [Technology Stack & Tools](docs/tech-stack.md) - Rationale, ecosystem tools, runtime libraries, and operational stack.
 - [CI/CD & Security Pipeline](docs/pipeline.md) - Zero-trust GitHub Actions pipeline, drift detection, security gates, and provenance.
 - [Template Usage & Adoption Guide](docs/template-guide.md) - How to instantiate and tailor this repository as a production service template.
+- [Developer User Guide](docs/user-guide.md) - End-to-end practical guide for local development, debugging, testing, API consumption, and troubleshooting.
 
 ## Creating a New Service from this Template
 

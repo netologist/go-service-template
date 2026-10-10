@@ -38,6 +38,7 @@ graph TD
 | **[Tech Stack](tech-stack.md)** | Architectural justification for every library and developer tool. |
 | **[CI/CD & Security](pipeline.md)** | Multi-stage verification pipeline, container provenance, and supply chain security. |
 | **[Template Guide](template-guide.md)** | Step-by-step guide to instantiating, renaming, and adopting this template. |
+| **[User Guide](user-guide.md)** | Comprehensive developer handbook for running, debugging, testing, and operating the service. |
 | **[Decisions (ADRs)](decisions/0001-development-environment.md)** | Formal Architecture Decision Records documenting all major technical tradeoffs. |
 | **[Technical Debts](techdebts/0001-ci-cache-poisoning.md)** | Explicit log of tracked technical compromises and their remediation paths. |
 
