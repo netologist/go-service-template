@@ -162,3 +162,11 @@ mise run test
 
 echo "Successfully initialized template for $NEW_MODULE!"
 '''
+
+[tasks."docs:build"]
+description = "Build documentation site with MkDocs"
+run = "which uv >/dev/null 2>&1 && uv run --with-requirements requirements-docs.txt mkdocs build --strict || python3 -m mkdocs build --strict"
+
+[tasks."docs:serve"]
+description = "Serve documentation site locally with live-reload"
+run = "which uv >/dev/null 2>&1 && uv run --with-requirements requirements-docs.txt mkdocs serve || python3 -m mkdocs serve"

@@ -104,6 +104,10 @@ mise run format             # Format Go files with goimports
 mise run secret:check       # Gitleaks detection
 mise run vuln               # Govulncheck vulnerability scanner
 
+# Documentation (MkDocs Material)
+mise run docs:serve          # Local documentation server with live-reload
+mise run docs:build          # Build production static documentation site
+
 # Git hooks (managed by lefthook)
 mise run hooks:install
 ```

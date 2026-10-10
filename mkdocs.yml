@@ -1,0 +1,83 @@
+site_name: Go Service Template
+site_description: Production-grade Go Microservice Template with Hexagonal Architecture
+site_author: Netologist
+repo_name: netologist/go-service-template
+repo_url: https://github.com/netologist/go-service-template
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Architecture & Design:
+      - Project Structure: folder-structure.md
+      - Tech Stack: tech-stack.md
+      - CI/CD & Security: pipeline.md
+  - Adoption Guide: template-guide.md
+  - Architecture Decisions (ADRs):
+      - ADR-0001 Development Environment: decisions/0001-development-environment.md
+      - ADR-0002 OpenAPI Spec-First: decisions/0002-openapi-spec-first-architecture.md
+      - ADR-0003 PostgreSQL Persistence: decisions/0003-postgresql-persistence-layer.md
+      - ADR-0004 Configuration Management: decisions/0004-configuration-management.md
+      - ADR-0005 Layer Simplification: decisions/0005-layer-simplification-and-mapping.md
+      - ADR-0006 Air Live-Reload & Delve: decisions/0006-local-development-air-delve.md
+  - Reviews & Audits:
+      - Implementation Review: reviews/2026-10-08-implementation-review.md
+  - Technical Debts:
+      - TD-0001 CI Cache Poisoning: techdebts/0001-ci-cache-poisoning.md
