@@ -1,0 +1,95 @@
+name: Continuous Deployment (Render)
+
+# This workflow is disabled by default to avoid triggering deployments until
+# RENDER_DEPLOY_HOOK_URL or Render credentials are configured in repository secrets.
+# To enable this workflow:
+#   1. Set secret RENDER_DEPLOY_HOOK_URL in repository Settings -> Secrets and variables -> Actions
+#   2. (Optional) Set DATABASE_URL secret if running migrations from CI/CD
+#   3. Rename this file to .github/workflows/cd.yml
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual deployment trigger"
+        required: false
+        default: "Manual trigger via GitHub Actions"
+      run_migrations:
+        description: "Run Goose database migrations before deploy"
+        required: false
+        type: boolean
+        default: false
+  # Optional automatic trigger on main branch push or semver release tag:
+  # push:
+  #   branches:
+  #     - main
+  #   tags:
+  #     - "v*.*.*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    if: inputs.run_migrations == true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Apply database migrations with Goose
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL secret is required when run_migrations is true."
+            exit 1
+          fi
+          go tool goose -dir database/migrations postgres "$DATABASE_URL" up
+
+  deploy-render:
+    name: Trigger Render Deployment
+    runs-on: ubuntu-latest
+    needs: [migrate]
+    if: always() && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
+    permissions:
+      contents: read
+    steps:
+      - name: Validate Deploy Hook Secret
+        env:
+          HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK_URL" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL secret is not configured. Add it to GitHub repository secrets before running deployment."
+            exit 1
+          fi
+
+      - name: Trigger Render Deploy Hook
+        env:
+          HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          REF: ${{ github.ref_name }}
+        run: |
+          echo "Triggering Render deployment for ref: $REF..."
+          HTTP_STATUS=$(curl -s -o response.txt -w "%{http_code}" -X POST "${HOOK_URL}&ref=${REF}")
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "Successfully triggered Render deployment (HTTP $HTTP_STATUS)."
+            cat response.txt
+          else
+            echo "::error::Render deployment trigger failed with HTTP $HTTP_STATUS:"
+            cat response.txt
+            exit 1
+          fi

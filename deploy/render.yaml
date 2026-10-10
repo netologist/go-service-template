@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+# ==============================================================================
+# Render Blueprint Specification (Infrastructure-as-Code)
+# Documentation: https://render.com/docs/blueprint-spec
+# ==============================================================================
+
+version: "1"
+
+databases:
+  # Managed PostgreSQL instance for catalog & items persistence
+  - name: items-db
+    databaseName: items_db
+    user: postgres
+    plan: free # or starter for production SLA and persistent disks
+    ipAllowList: [] # Allows connections from Render internal network and public IP by default
+
+services:
+  # Web Service running the HTTP API server
+  - type: web
+    name: items-api
+    runtime: docker
+    plan: free # or starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    # Executes database migrations prior to routing live traffic to the new container version.
+    # Note: Requires /bin/goose in the container image and paid instance type (starter+) on Render.
+    # For free tier or scratch runtime, migrations are triggered via GitHub Actions CD (.github/workflows/cd.yml).
+    preDeployCommand: /bin/goose -dir /database/migrations postgres "$DATABASE_URL" up
+    autoDeploy: false # CD pipeline triggers deployments deterministically via deploy hook or commit push
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: HTTP_PORT
+        value: "8080"
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_URL
+        fromDatabase:
+          name: items-db
+          property: connectionString
+      - key: SERVER_SHUTDOWN_TIMEOUT
+        value: 10s
+      - key: SERVER_DRAIN_TIMEOUT
+        value: 5s
+      - key: SERVER_READ_HEADER_TIMEOUT
+        value: 30s
+      - key: SERVER_READ_TIMEOUT
+        value: 30s
+      - key: SERVER_WRITE_TIMEOUT
+        value: 30s
+      - key: SERVER_IDLE_TIMEOUT
+        value: 2m
+      - key: DB_MAX_CONNS
+        value: "20"
+      - key: DB_MIN_CONNS
+        value: "2"
+      - key: DB_MAX_CONN_LIFETIME
+        value: 30m
+      - key: DB_MAX_CONN_IDLE_TIME
+        value: 5m
+      - key: DB_HEALTH_CHECK_PERIOD
+        value: 1m
+      - key: DB_PING_TIMEOUT
+        value: 5s

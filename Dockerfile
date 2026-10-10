@@ -45,7 +45,8 @@ FROM scratch AS production
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /tmp/passwd /tmp/group /etc/
 COPY --from=builder /bin/server /server
-
+COPY --from=builder /bin/goose /bin/goose
+COPY database/migrations /database/migrations
 USER 10001:10001
 EXPOSE 8080
 
