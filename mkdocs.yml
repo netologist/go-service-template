@@ -82,5 +82,6 @@ nav:
       - ADR-0004 Configuration Management: decisions/0004-configuration-management.md
       - ADR-0005 Layer Simplification: decisions/0005-layer-simplification-and-mapping.md
       - ADR-0006 Air Live-Reload & Delve: decisions/0006-local-development-air-delve.md
+      - ADR-0007 gRPC Dual-Protocol: decisions/0007-grpc-support-and-dual-protocol-architecture.md
   - Technical Debts:
       - TD-0001 CI Cache Poisoning: techdebts/0001-ci-cache-poisoning.md
