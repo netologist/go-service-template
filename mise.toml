@@ -145,6 +145,7 @@ run = "git diff --exit-code -- internal/gen/mocks"
 [tasks."template:init"]
 description = "Initialize project with a new module name (usage: mise run template:init <new-module-path>)"
 run = '''
+#!/usr/bin/env bash
 NEW_MODULE="$1"
 if [ -z "$NEW_MODULE" ]; then
   echo "Error: Missing new module path."
@@ -157,10 +158,18 @@ echo "Initializing template from $OLD_MODULE to $NEW_MODULE..."
 
 go mod edit -module "$NEW_MODULE"
 
-find . -type f \( -name "*.go" -o -name "*.yaml" -o -name "*.yml" -o -name "*.toml" -o -name "Dockerfile*" \) \
-  -not -path "*/.git/*" -not -path "./vendor/*" | while read -r file; do
-    perl -pi -e "s|\Q$OLD_MODULE\E|$NEW_MODULE|g" "$file"
-done
+find . \
+  -type f \
+  \( -name '*.go' -o -name '*.yaml' -o -name '*.yml' -o -name '*.toml' -o -name 'Dockerfile*' \) \
+  -not -path './.git/*' \
+  -not -path './vendor/*' \
+  -exec perl -i -pe '
+    BEGIN {
+      $old = $ENV{"OLD_MODULE"};
+      $new = $ENV{"NEW_MODULE"};
+    }
+    s/\Q$old\E/$new/g;
+  ' {} +
 
 echo "Regenerating code..."
 mise run generate
