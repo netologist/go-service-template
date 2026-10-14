@@ -9,6 +9,7 @@ pre-commit:
       glob: "*.go"
       exclude:
         - "internal/gen/**"
+        - "pkg/proto/**"
         - "vendor/**"
       run: go tool goimports -local github.com/netologist/go-service-template -w {staged_files}
       stage_fixed: true
