@@ -58,9 +58,8 @@ mise run template:init github.com/your-org/your-service
 
 ## Prerequisites
 
-- [Mise](https://mise.jdx.dev/) (manages Go and CLI tools)
+- [Mise](https://mise.jdx.dev/) (manages Go runtime and hermetic CLI tools: `buf`, `grpcurl`)
 - [Docker](https://docs.docker.com/get-docker/) & Docker Compose (for local PostgreSQL)
-
 ## Quickstart
 
 ```bash
@@ -80,19 +79,22 @@ mise run migrate:up
 go run ./cmd/server
 ```
 
-The server starts on `http://localhost:8080`.
-
-- Health check probe: `GET http://localhost:8080/healthz`
-- Swagger UI (development only): `GET http://localhost:8080/docs/`
-- OpenAPI Specification: `GET http://localhost:8080/openapi.json`
-- Items API: `GET /api/v1/items`, `POST /api/v1/items`
-
+The server starts with dual-protocol support:
+- **HTTP/REST Server** (`http://localhost:8080`):
+  - Health check probe: `GET http://localhost:8080/healthz`
+  - Swagger UI (development only): `GET http://localhost:8080/docs/`
+  - OpenAPI Specification: `GET http://localhost:8080/openapi.json`
+  - Items API: `GET /api/v1/items`, `POST /api/v1/items`
+- **gRPC Server** (`localhost:50051`):
+  - Health check probe: `grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check` (or `go tool grpcurl ...`)
+  - Reflection: `grpcurl -plaintext localhost:50051 list`
+  - ItemService RPCs: `item.v1.ItemService/CreateItem`, `item.v1.ItemService/FindItems`
 ## Development Commands
 
 ```bash
-# Code generation (OpenAPI, SQLC, Mockery)
-mise run generate
-
+# Code generation (OpenAPI, Protobuf/Buf, SQLC, Mockery)
+mise run generate           # All generators (OpenAPI, Protobuf, SQLC, Mocks)
+mise run generate:proto     # Protobuf compilation via Buf CLI
 # Testing
 mise run test               # Unit and architectural tests with race detector
 mise run test:arch          # Architecture boundary tests (Hexagonal rules)

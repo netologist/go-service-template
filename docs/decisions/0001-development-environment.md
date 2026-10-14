@@ -77,6 +77,7 @@ We leverage Go's native `tool` directive in `go.mod` to declare and version-cont
 - **`golang.org/x/vuln/cmd/govulncheck`**: Queries the official Go vulnerability database to surface known CVEs and security advisories in reachable call graphs.
 - **`gotest.tools/gotestsum`**: Runs Go tests with structured, human-readable terminal output (`--format testname`) and summary reporting.
 - **`github.com/evilmartians/lefthook/v2`**: Provides fast, dependency-free Git hooks orchestration.
+- **`github.com/fullstorydev/grpcurl/cmd/grpcurl`**: Provides CLI introspection, health-checking, and interactive RPC testing for gRPC servers via reflection without requiring global tools.
 Each tool dependency is cryptographically pinned in `go.sum` and executed directly via `go tool <command>`, eliminating the need for pre-installed global binaries.
 
 ### 3. Shift-Left Quality & Security via Lefthook (`lefthook.yml`)

@@ -48,6 +48,6 @@ COPY --from=builder /bin/server /server
 COPY --from=builder /bin/goose /bin/goose
 COPY database/migrations /database/migrations
 USER 10001:10001
-EXPOSE 8080
+EXPOSE 8080 50051
 
 ENTRYPOINT ["/server"]

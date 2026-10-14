@@ -25,6 +25,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-service_db}?sslmode=disable
     ports:
       - "8080:8080"
+      - "50051:50051"
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,6 +54,7 @@ services:
       dockerfile: Dockerfile.e2e
     environment:
       BASE_URL: http://api:8080
+      GRPC_TARGET: api:50051
     depends_on:
       api-healthcheck:
         condition: service_healthy

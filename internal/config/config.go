@@ -7,11 +7,19 @@ import (
 	"github.com/caarlos0/env/v11"
 )
 
-const environmentProduction = "production"
+const (
+	environmentProduction = "production"
+
+	ServerModeAll  = "all"
+	ServerModeGRPC = "grpc"
+	ServerModeREST = "rest"
+)
 
 type Config struct {
 	Environment string `env:"APP_ENV" envDefault:"development" validate:"required,oneof=development staging production test"` //nolint:lll // struct tags cannot be split across lines
+	ServerMode  string `env:"SERVER_MODE" envDefault:"all" validate:"required,oneof=all grpc rest"`
 	HTTPPort    int    `env:"HTTP_PORT" envDefault:"8080" validate:"required,min=1,max=65535"`
+	GRPCPort    int    `env:"GRPC_PORT" envDefault:"50051" validate:"required,min=1,max=65535"`
 	DatabaseURL string `env:"DATABASE_URL" validate:"required"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"info" validate:"required,oneof=debug info warn error"`
 
@@ -39,6 +47,21 @@ type Config struct {
 // ServerAddr returns the listening address formatted as ":<port>".
 func (c *Config) ServerAddr() string {
 	return fmt.Sprintf(":%d", c.HTTPPort)
+}
+
+// GRPCAddr returns the gRPC listening address formatted as ":<port>".
+func (c *Config) GRPCAddr() string {
+	return fmt.Sprintf(":%d", c.GRPCPort)
+}
+
+// HTTPEnabled reports whether the HTTP/REST server should run.
+func (c *Config) HTTPEnabled() bool {
+	return c.ServerMode == ServerModeAll || c.ServerMode == ServerModeREST
+}
+
+// GRPCEnabled reports whether the gRPC server should run.
+func (c *Config) GRPCEnabled() bool {
+	return c.ServerMode == ServerModeAll || c.ServerMode == ServerModeGRPC
 }
 
 // DocsEnabled reports whether the Swagger UI and the OpenAPI document are served.

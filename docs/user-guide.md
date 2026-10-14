@@ -24,10 +24,10 @@ To run and develop this project, you only need two tools installed on your host 
 
 | Tool | Minimum Version | Responsibility |
 | :--- | :--- | :--- |
-| **[Mise](https://mise.jdx.dev/)** | Latest | Manages Go runtime (`1.27.2`) and task orchestration. |
+| **[Mise](https://mise.jdx.dev/)** | Latest | Manages Go runtime (`1.27.2`), Protobuf tooling (`buf`), gRPC CLI (`grpcurl`), and task orchestration. |
 | **[Docker & Docker Compose](https://docs.docker.com/get-docker/)** | v2.20+ | Runs local PostgreSQL database and containerized suites. |
 
-> **Note:** You do **not** need to install Go CLI utilities globally (`go install ...`). Every tool is version-pinned in `go.mod` and executed through `mise`.
+> **Note:** You do **not** need to install Go CLI utilities globally (`go install ...`). Every tool is version-pinned in `go.mod` (callable via `go tool <tool>`) and CLI tools (`buf`, `grpcurl`) are managed directly through `mise`.
 
 ### Bootstrap Local Environment
 
@@ -181,6 +181,7 @@ graph LR
 | Command | Description |
 | :--- | :--- |
 | `mise run generate` | Executes all generators in dependency order (OpenAPI Server, Client SDK, SQLC, Mockery). |
+| `mise run generate:proto` | Compiles `api/proto/item/v1/item.proto` into `pkg/proto/item/v1/` using Buf CLI. |
 | `mise run generate:oapi` | Compiles `api/openapi.yaml` into strict Chi server interfaces and request/response models. |
 | `mise run generate:client` | Compiles `api/openapi.yaml` into a production-ready Go HTTP Client SDK under `pkg/client`. |
 | `mise run generate:sqlc` | Compiles SQL queries in `database/queries/*.sql` into type-safe Go persistence methods. |
@@ -324,6 +325,37 @@ Attempting to create an item with an existing unique name:
   "code": "ITEM_ALREADY_EXISTS",
   "request_id": "d2e8c990-2345-6789-01bc-def012345678"
 }
+```
+
+
+### 4. gRPC API & grpcurl Reference
+
+The gRPC server runs on port `:50051` with Server Reflection and `grpc.health.v1` enabled. You can interact with it using `grpcurl` (installed via Mise) or via Go tool directives (`go tool grpcurl`):
+
+```bash
+# 1. List all available services via reflection
+grpcurl -plaintext localhost:50051 list
+# Output:
+# grpc.health.v1.Health
+# grpc.reflection.v1.ServerReflection
+# grpc.reflection.v1alpha.ServerReflection
+# item.v1.ItemService
+
+# 2. Inspect ItemService schema and RPC definitions
+grpcurl -plaintext localhost:50051 describe item.v1.ItemService
+
+# 3. Check server health status
+grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check
+
+# 4. Register a new item via gRPC
+grpcurl -plaintext -d '{
+  "name": "Mechanical Keyboard",
+  "description": "Ergonomic hot-swappable keyboard",
+  "price": 9900
+}' localhost:50051 item.v1.ItemService/CreateItem
+
+# 5. Query items via gRPC
+grpcurl -plaintext -d '{"name": "Keyboard"}' localhost:50051 item.v1.ItemService/FindItems
 ```
 
 ---

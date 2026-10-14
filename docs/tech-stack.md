@@ -12,6 +12,9 @@ This document outlines the technologies, libraries, and developer tools chosen f
 | **HTTP Router** | [Chi](https://github.com/go-chi/chi) | v5.3 | Lightweight, standard-library compliant HTTP routing |
 | **API Contract** | [OpenAPI 3.0](https://spec.openapis.org/oas/v3.0.3) | 3.0.3 | Spec-first single source of truth for REST interfaces |
 | **Code Generation** | [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) | v2 | Type-safe server handlers & schemas from OpenAPI |
+| **RPC Framework** | [gRPC](https://grpc.io/) | v1.83 | High-performance, binary RPC protocol with HTTP/2 transport |
+| **Protobuf Tooling** | [Buf CLI](https://buf.build/) | v1.50 | Hermetic Protobuf linter, breaking change detector & code generator |
+| **gRPC CLI Client** | [grpcurl](https://github.com/fullstorydev/grpcurl) | v1.9 | Command-line tool for interacting with and probing gRPC servers |
 | **Database Engine** | [PostgreSQL](https://www.postgresql.org/) | 16+ | Relational data persistence |
 | **Database Driver** | [pgx](https://github.com/jackc/pgx) | v5.11 | High-performance, pure Go PostgreSQL driver & pool |
 | **SQL Compiler** | [sqlc](https://sqlc.dev/) | v1.28 | Type-safe Go code generation directly from raw SQL |

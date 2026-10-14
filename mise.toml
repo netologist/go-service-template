@@ -1,6 +1,7 @@
 [tools]
 go = "1.27.2"
-
+buf = "1.50.0"
+grpcurl = "1.9.4"
 [env]
 _.file = ".env"
 POSTGRES_USER = "postgres"
@@ -90,6 +91,10 @@ run = "go tool oapi-codegen -config oapi-codegen.yml api/openapi.yaml"
 [tasks."generate:client"]
 description = "Generate Go HTTP client SDK from OpenAPI specification"
 run = "go tool oapi-codegen -config oapi-codegen-client.yml api/openapi.yaml"
+[tasks."generate:proto"]
+description = "Generate Go code from Protobuf specifications with Buf"
+run = "buf generate"
+
 
 [tasks."generate:sqlc"]
 description = "Generate Go code from SQL queries with sqlc"
@@ -123,9 +128,8 @@ run = "docker compose down -v"
 run = "docker compose exec postgres psql -U postgres -d service_db"
 
 [tasks."generate"]
-description = "Run all code generators (OpenAPI Server, Client, SQL queries, Mocks)"
-depends = ["generate:oapi", "generate:client", "generate:sqlc", "generate:mocks"]
-
+description = "Run all code generators (OpenAPI Server, Client, Protobuf, SQL queries, Mocks)"
+depends = ["generate:oapi", "generate:client", "generate:proto", "generate:sqlc", "generate:mocks"]
 [tasks."generate:mocks"]
 description = "Generate mocks with mockery"
 alias = "mocks:generate"

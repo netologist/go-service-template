@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,15 +11,25 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
+
+	itemv1 "github.com/netologist/go-service-template/pkg/proto/item/v1"
 )
 
 var (
-	baseURL    string
-	httpClient *http.Client
+	baseURL          string
+	grpcTarget       string
+	httpClient       *http.Client
+	grpcConn         *grpc.ClientConn
+	grpcItemClient   itemv1.ItemServiceClient
+	grpcHealthClient grpc_health_v1.HealthClient
 )
 
 const (
 	defaultBaseURL      = "http://localhost:8080"
+	defaultGRPCTarget   = "localhost:50051"
 	startupTimeout      = 30 * time.Second
 	startupPollInterval = 500 * time.Millisecond
 )
@@ -56,4 +67,40 @@ var _ = BeforeSuite(func() {
 		baseURL,
 		startupTimeout,
 	)
+
+	grpcTarget = os.Getenv("GRPC_TARGET")
+	if grpcTarget == "" {
+		grpcTarget = defaultGRPCTarget
+	}
+
+	var connErr error
+	grpcConn, connErr = grpc.NewClient(grpcTarget, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	Expect(connErr).NotTo(HaveOccurred())
+
+	grpcItemClient = itemv1.NewItemServiceClient(grpcConn)
+	grpcHealthClient = grpc_health_v1.NewHealthClient(grpcConn)
+
+	Eventually(func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		resp, err := grpcHealthClient.Check(ctx, &grpc_health_v1.HealthCheckRequest{})
+		if err != nil {
+			return err
+		}
+		if resp.Status != grpc_health_v1.HealthCheckResponse_SERVING {
+			return fmt.Errorf("grpc health check returned %s", resp.Status)
+		}
+		return nil
+	}).WithTimeout(startupTimeout).WithPolling(startupPollInterval).Should(
+		Succeed(),
+		"Target gRPC server %s did not become healthy within %s",
+		grpcTarget,
+		startupTimeout,
+	)
+})
+
+var _ = AfterSuite(func() {
+	if grpcConn != nil {
+		_ = grpcConn.Close()
+	}
 })

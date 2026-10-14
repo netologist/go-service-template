@@ -167,6 +167,7 @@ func TestArchitecture_UsecaseLayerIsolation(t *testing.T) {
 	}
 }
 
+//nolint:funlen // adapter isolation covers all adapters
 func TestArchitecture_AdapterIsolation(t *testing.T) {
 	t.Parallel()
 	pkgs := loadInternalPackages(t)
@@ -181,6 +182,11 @@ func TestArchitecture_AdapterIsolation(t *testing.T) {
 			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/httpapi"),
 			"postgres adapter must not cross-import httpapi adapter: %s", imp,
 		)
+		assert.False(
+			t,
+			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/grpc"),
+			"postgres adapter must not cross-import grpc adapter: %s", imp,
+		)
 	}
 
 	httpapiPath := modulePrefix + "/internal/adapter/httpapi"
@@ -193,6 +199,11 @@ func TestArchitecture_AdapterIsolation(t *testing.T) {
 			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/postgres"),
 			"httpapi adapter must not cross-import postgres adapter: %s", imp,
 		)
+		assert.False(
+			t,
+			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/grpc"),
+			"httpapi adapter must not cross-import grpc adapter: %s", imp,
+		)
 	}
 
 	handlerPath := modulePrefix + "/internal/adapter/httpapi/handler"
@@ -204,6 +215,45 @@ func TestArchitecture_AdapterIsolation(t *testing.T) {
 			t,
 			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/postgres"),
 			"httpapi handler must not cross-import postgres adapter: %s", imp,
+		)
+		assert.False(
+			t,
+			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/grpc"),
+			"httpapi handler must not cross-import grpc adapter: %s", imp,
+		)
+	}
+
+	grpcPath := modulePrefix + "/internal/adapter/grpc"
+	grpcImports, ok := pkgs[grpcPath]
+	require.True(t, ok, "internal/adapter/grpc must exist in loaded packages")
+
+	for _, imp := range grpcImports {
+		assert.False(
+			t,
+			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/postgres"),
+			"grpc adapter must not cross-import postgres adapter: %s", imp,
+		)
+		assert.False(
+			t,
+			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/httpapi"),
+			"grpc adapter must not cross-import httpapi adapter: %s", imp,
+		)
+	}
+
+	grpcHandlerPath := modulePrefix + "/internal/adapter/grpc/handler"
+	grpcHandlerImports, ok := pkgs[grpcHandlerPath]
+	require.True(t, ok, "internal/adapter/grpc/handler must exist in loaded packages")
+
+	for _, imp := range grpcHandlerImports {
+		assert.False(
+			t,
+			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/postgres"),
+			"grpc handler must not cross-import postgres adapter: %s", imp,
+		)
+		assert.False(
+			t,
+			strings.HasPrefix(imp, modulePrefix+"/internal/adapter/httpapi"),
+			"grpc handler must not cross-import httpapi adapter: %s", imp,
 		)
 	}
 }

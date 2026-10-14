@@ -16,9 +16,12 @@ const (
 	errValidationFailed      = "configuration validation failed"
 	errProcessEnvFailed      = "failed to process environment variables"
 	defaultEnvironment       = "development"
+	defaultServerMode        = "all"
 	defaultLogLevel          = "info"
 	defaultHTTPPort          = 8080
 	defaultServerAddr        = ":8080"
+	defaultGRPCPort          = 50051
+	defaultGRPCAddr          = ":50051"
 	defaultShutdownTimeout   = 10 * time.Second
 	defaultDrainTimeout      = 5 * time.Second
 	defaultReadHeaderTimeout = 30 * time.Second
@@ -33,9 +36,12 @@ const (
 	defaultPingTimeout       = 5 * time.Second
 
 	customEnvironment       = "production"
+	customServerMode        = "grpc"
 	customLogLevel          = "warn"
 	customHTTPPort          = 9090
 	customServerAddr        = ":9090"
+	customGRPCPort          = 60051
+	customGRPCAddr          = ":60051"
 	customDatabaseURL       = "postgres://custom:5432/custom_db"
 	customShutdownTimeout   = 15 * time.Second
 	customDrainTimeout      = 10 * time.Second
@@ -67,6 +73,8 @@ func resetEnv(t *testing.T) {
 	t.Setenv("DATABASE_URL", testDatabaseURL)
 	unsetEnv(t, "APP_ENV")
 	unsetEnv(t, "HTTP_PORT")
+	unsetEnv(t, "SERVER_MODE")
+	unsetEnv(t, "GRPC_PORT")
 	unsetEnv(t, "LOG_LEVEL")
 	unsetEnv(t, "SERVER_SHUTDOWN_TIMEOUT")
 	unsetEnv(t, "SERVER_DRAIN_TIMEOUT")
@@ -91,6 +99,11 @@ func TestLoad_Defaults(t *testing.T) {
 
 	assert.Equal(t, defaultEnvironment, cfg.Environment)
 	assert.Equal(t, defaultHTTPPort, cfg.HTTPPort)
+	assert.Equal(t, defaultServerMode, cfg.ServerMode)
+	assert.Equal(t, defaultGRPCPort, cfg.GRPCPort)
+	assert.Equal(t, defaultGRPCAddr, cfg.GRPCAddr())
+	assert.True(t, cfg.HTTPEnabled())
+	assert.True(t, cfg.GRPCEnabled())
 	assert.Equal(t, defaultLogLevel, cfg.LogLevel)
 	assert.Equal(t, testDatabaseURL, cfg.DatabaseURL)
 	assert.Equal(t, defaultServerAddr, cfg.ServerAddr())
@@ -108,10 +121,12 @@ func TestLoad_Defaults(t *testing.T) {
 	assert.Equal(t, defaultPingTimeout, cfg.DBPingTimeout)
 }
 
-func TestLoad_CustomEnv(t *testing.T) {
+func TestLoad_CustomEnv(t *testing.T) { //nolint:funlen // comprehensive test covers all environment variable overrides
 	resetEnv(t)
 	t.Setenv("APP_ENV", customEnvironment)
 	t.Setenv("HTTP_PORT", "9090")
+	t.Setenv("SERVER_MODE", customServerMode)
+	t.Setenv("GRPC_PORT", "60051")
 	t.Setenv("LOG_LEVEL", customLogLevel)
 	t.Setenv("DATABASE_URL", customDatabaseURL)
 	t.Setenv("SERVER_SHUTDOWN_TIMEOUT", "15s")
@@ -134,6 +149,11 @@ func TestLoad_CustomEnv(t *testing.T) {
 	assert.Equal(t, customEnvironment, cfg.Environment)
 	assert.Equal(t, customHTTPPort, cfg.HTTPPort)
 	assert.Equal(t, customLogLevel, cfg.LogLevel)
+	assert.Equal(t, customServerMode, cfg.ServerMode)
+	assert.Equal(t, customGRPCPort, cfg.GRPCPort)
+	assert.Equal(t, customGRPCAddr, cfg.GRPCAddr())
+	assert.False(t, cfg.HTTPEnabled())
+	assert.True(t, cfg.GRPCEnabled())
 	assert.Equal(t, customDatabaseURL, cfg.DatabaseURL)
 	assert.Equal(t, customServerAddr, cfg.ServerAddr())
 	assert.Equal(t, customShutdownTimeout, cfg.ServerShutdownTimeout)
@@ -190,6 +210,27 @@ func basicValidationCases() []validationCase {
 			name: "invalid_log_level",
 			setup: func(t *testing.T) {
 				t.Setenv("LOG_LEVEL", "verbose")
+			},
+			errSub: errValidationFailed,
+		},
+		{
+			name: "invalid_server_mode",
+			setup: func(t *testing.T) {
+				t.Setenv("SERVER_MODE", "invalid_mode")
+			},
+			errSub: errValidationFailed,
+		},
+		{
+			name: "grpc_port_too_low",
+			setup: func(t *testing.T) {
+				t.Setenv("GRPC_PORT", "0")
+			},
+			errSub: errValidationFailed,
+		},
+		{
+			name: "grpc_port_too_high",
+			setup: func(t *testing.T) {
+				t.Setenv("GRPC_PORT", "65536")
 			},
 			errSub: errValidationFailed,
 		},
@@ -341,4 +382,20 @@ func TestConfig_DocsEnabled(t *testing.T) {
 
 	cfg.Environment = "production"
 	assert.False(t, cfg.DocsEnabled())
+}
+
+func TestConfig_ProtocolModes(t *testing.T) {
+	t.Parallel()
+
+	cfgAll := &config.Config{ServerMode: config.ServerModeAll}
+	assert.True(t, cfgAll.HTTPEnabled())
+	assert.True(t, cfgAll.GRPCEnabled())
+
+	cfgGRPC := &config.Config{ServerMode: config.ServerModeGRPC}
+	assert.False(t, cfgGRPC.HTTPEnabled())
+	assert.True(t, cfgGRPC.GRPCEnabled())
+
+	cfgREST := &config.Config{ServerMode: config.ServerModeREST}
+	assert.True(t, cfgREST.HTTPEnabled())
+	assert.False(t, cfgREST.GRPCEnabled())
 }
