@@ -1,9 +1,7 @@
 package e2e_test
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -14,7 +12,7 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
-	"github.com/netologist/go-service-template/internal/gen/openapi"
+	"github.com/netologist/go-service-template/pkg/client"
 	itemv1 "github.com/netologist/go-service-template/pkg/proto/item/v1"
 )
 
@@ -123,18 +121,13 @@ var _ = Describe("gRPC ItemService and Protocol Interoperability", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Fetch via REST HTTP
-			resp, err := httpClient.Get(baseURL + "/api/v1/items")
+			resp, err := apiClient.FindItemsWithResponse(ctx, nil)
 			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = resp.Body.Close() }()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-			var items []openapi.Item
-			err = json.NewDecoder(resp.Body).Decode(&items)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode()).To(Equal(http.StatusOK))
+			Expect(resp.JSON200).NotTo(BeNil())
 
 			var found bool
-			for _, it := range items {
+			for _, it := range *resp.JSON200 {
 				if it.Id.String() == created.Item.Id {
 					Expect(it.Name).To(Equal(itemName))
 					Expect(it.Price).To(Equal(int64(4200)))
@@ -147,30 +140,22 @@ var _ = Describe("gRPC ItemService and Protocol Interoperability", func() {
 
 		It("retrieves item created via REST HTTP when listing over gRPC", func() {
 			itemName := "CrossProto REST->gRPC " + uuid.NewString()[:8]
+			desc := "Created via REST port"
 
-			payload, err := json.Marshal(map[string]any{
-				"name":        itemName,
-				"description": "Created via REST port",
-				"price":       8800,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			postResp, err := httpClient.Post(
-				baseURL+"/api/v1/items",
-				"application/json",
-				bytes.NewReader(payload),
-			)
-			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = postResp.Body.Close() }()
-			Expect(postResp.StatusCode).To(Equal(http.StatusCreated))
-
-			var createdRest openapi.Item
-			err = json.NewDecoder(postResp.Body).Decode(&createdRest)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Query via gRPC
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
+
+			postResp, err := apiClient.CreateItemWithResponse(ctx, client.CreateItemJSONRequestBody{
+				Name:        itemName,
+				Description: &desc,
+				Price:       8800,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(postResp.StatusCode()).To(Equal(http.StatusCreated))
+			Expect(postResp.JSON201).NotTo(BeNil())
+
+			createdRest := postResp.JSON201
+			// Query via gRPC
 
 			grpcListResp, err := grpcItemClient.FindItems(ctx, &itemv1.FindItemsRequest{
 				Name: itemName,

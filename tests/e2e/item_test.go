@@ -1,22 +1,16 @@
 package e2e_test
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/netologist/go-service-template/internal/gen/openapi"
-)
-
-const (
-	fieldItemName        = "name"
-	fieldItemDescription = "description"
-	fieldItemPrice       = "price"
+	"github.com/netologist/go-service-template/pkg/client"
 )
 
 var _ = Describe("Items API (/api/v1/items)", func() {
@@ -25,70 +19,67 @@ var _ = Describe("Items API (/api/v1/items)", func() {
 			itemName := "E2E Item " + uuid.NewString()[:8]
 			desc := "High quality testing item"
 			price := int64(4999)
-			payload, err := json.Marshal(map[string]any{
-				fieldItemName:        itemName,
-				fieldItemDescription: desc,
-				fieldItemPrice:       price,
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			resp, err := apiClient.CreateItemWithResponse(ctx, client.CreateItemJSONRequestBody{
+				Name:        itemName,
+				Description: &desc,
+				Price:       price,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			resp, err := httpClient.Post(
-				baseURL+"/api/v1/items",
-				"application/json",
-				bytes.NewReader(payload),
-			)
-			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = resp.Body.Close() }()
+			Expect(resp.StatusCode()).To(Equal(http.StatusCreated))
+			Expect(resp.ContentType()).To(ContainSubstring("application/json"))
+			Expect(resp.JSON201).NotTo(BeNil())
 
-			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
-			Expect(resp.Header.Get("Content-Type")).To(ContainSubstring("application/json"))
-
-			var created openapi.Item
-			err = json.NewDecoder(resp.Body).Decode(&created)
-			Expect(err).NotTo(HaveOccurred())
-
+			created := resp.JSON201
 			Expect(created.Id).NotTo(Equal(uuid.Nil))
 			Expect(created.Name).To(Equal(itemName))
 			Expect(created.Description).To(Equal(desc))
 			Expect(created.Price).To(Equal(price))
-			Expect(created.CreatedAt).NotTo(BeNil())
-			Expect(created.UpdatedAt).NotTo(BeNil())
+			Expect(created.CreatedAt).NotTo(BeZero())
+			Expect(created.UpdatedAt).NotTo(BeZero())
 		})
 
 		It("returns HTTP 400 when body has validation errors", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
 			payload := `{"name":"","description":"","price":-10}`
-			resp, err := httpClient.Post(
-				baseURL+"/api/v1/items",
+			resp, err := apiClient.CreateItemWithBodyWithResponse(
+				ctx,
 				"application/json",
 				strings.NewReader(payload),
 			)
 			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = resp.Body.Close() }()
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-			Expect(resp.Header.Get("Content-Type")).To(ContainSubstring("application/problem+json"))
 
-			var prob openapi.Problem
-			err = json.NewDecoder(resp.Body).Decode(&prob)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode()).To(Equal(http.StatusBadRequest))
+			Expect(resp.ContentType()).To(ContainSubstring("application/problem+json"))
+			Expect(resp.ApplicationproblemJSON400).NotTo(BeNil())
+
+			prob := resp.ApplicationproblemJSON400
 			Expect(prob.Status).To(Equal(http.StatusBadRequest))
 			Expect(prob.Title).To(Equal("Bad Request"))
 			Expect(prob.Detail).NotTo(BeNil())
 		})
 
 		It("returns HTTP 400 when body is malformed JSON", func() {
-			resp, err := httpClient.Post(
-				baseURL+"/api/v1/items",
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			resp, err := apiClient.CreateItemWithBodyWithResponse(
+				ctx,
 				"application/json",
 				strings.NewReader(`{invalid`),
 			)
 			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = resp.Body.Close() }()
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-			Expect(resp.Header.Get("Content-Type")).To(ContainSubstring("application/problem+json"))
 
-			var prob openapi.Problem
-			err = json.NewDecoder(resp.Body).Decode(&prob)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode()).To(Equal(http.StatusBadRequest))
+			Expect(resp.ContentType()).To(ContainSubstring("application/problem+json"))
+			Expect(resp.ApplicationproblemJSON400).NotTo(BeNil())
+
+			prob := resp.ApplicationproblemJSON400
 			Expect(prob.Status).To(Equal(http.StatusBadRequest))
 			Expect(prob.Title).To(Equal("Bad Request"))
 			Expect(prob.Detail).NotTo(BeNil())
@@ -96,37 +87,30 @@ var _ = Describe("Items API (/api/v1/items)", func() {
 
 		It("returns HTTP 409 when attempting to register a duplicate item name", func() {
 			itemName := "E2E Unique Item " + uuid.NewString()[:8]
-			payload, err := json.Marshal(map[string]any{
-				fieldItemName:        itemName,
-				fieldItemDescription: "Unique item description",
-				fieldItemPrice:       1999,
-			})
-			Expect(err).NotTo(HaveOccurred())
+			desc := "Unique item description"
 
-			resp1, err := httpClient.Post(
-				baseURL+"/api/v1/items",
-				"application/json",
-				bytes.NewReader(payload),
-			)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			req := client.CreateItemJSONRequestBody{
+				Name:        itemName,
+				Description: &desc,
+				Price:       1999,
+			}
+
+			resp1, err := apiClient.CreateItemWithResponse(ctx, req)
 			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = resp1.Body.Close() }()
-			Expect(resp1.StatusCode).To(Equal(http.StatusCreated))
+			Expect(resp1.StatusCode()).To(Equal(http.StatusCreated))
 
 			// Second request with same name
-			resp2, err := httpClient.Post(
-				baseURL+"/api/v1/items",
-				"application/json",
-				bytes.NewReader(payload),
-			)
+			resp2, err := apiClient.CreateItemWithResponse(ctx, req)
 			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = resp2.Body.Close() }()
 
-			Expect(resp2.StatusCode).To(Equal(http.StatusConflict))
-			Expect(resp2.Header.Get("Content-Type")).To(ContainSubstring("application/problem+json"))
+			Expect(resp2.StatusCode()).To(Equal(http.StatusConflict))
+			Expect(resp2.ContentType()).To(ContainSubstring("application/problem+json"))
+			Expect(resp2.ApplicationproblemJSON409).NotTo(BeNil())
 
-			var prob openapi.Problem
-			err = json.NewDecoder(resp2.Body).Decode(&prob)
-			Expect(err).NotTo(HaveOccurred())
+			prob := resp2.ApplicationproblemJSON409
 			Expect(prob.Status).To(Equal(http.StatusConflict))
 			Expect(prob.Title).To(Equal("Conflict"))
 			Expect(prob.Code).NotTo(BeNil())
@@ -137,39 +121,32 @@ var _ = Describe("Items API (/api/v1/items)", func() {
 	Describe("GET /api/v1/items (List Items)", func() {
 		It("lists registered items and includes newly created item", func() {
 			itemName := "E2E Listed Item " + uuid.NewString()[:8]
-			createPayload, err := json.Marshal(map[string]any{
-				fieldItemName:        itemName,
-				fieldItemDescription: "Listed item description",
-				fieldItemPrice:       2500,
+			desc := "Listed item description"
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			createResp, err := apiClient.CreateItemWithResponse(ctx, client.CreateItemJSONRequestBody{
+				Name:        itemName,
+				Description: &desc,
+				Price:       2500,
 			})
 			Expect(err).NotTo(HaveOccurred())
-
-			createResp, err := httpClient.Post(
-				baseURL+"/api/v1/items",
-				"application/json",
-				bytes.NewReader(createPayload),
-			)
-			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = createResp.Body.Close() }()
-			Expect(createResp.StatusCode).To(Equal(http.StatusCreated))
+			Expect(createResp.StatusCode()).To(Equal(http.StatusCreated))
 
 			// Query list
-			listResp, err := httpClient.Get(baseURL + "/api/v1/items")
+			listResp, err := apiClient.FindItemsWithResponse(ctx, nil)
 			Expect(err).NotTo(HaveOccurred())
-			defer func() { _ = listResp.Body.Close() }()
 
-			Expect(listResp.StatusCode).To(Equal(http.StatusOK))
-			Expect(listResp.Header.Get("Content-Type")).To(ContainSubstring("application/json"))
+			Expect(listResp.StatusCode()).To(Equal(http.StatusOK))
+			Expect(listResp.ContentType()).To(ContainSubstring("application/json"))
+			Expect(listResp.JSON200).NotTo(BeNil())
+			Expect(*listResp.JSON200).NotTo(BeEmpty())
 
-			var items []openapi.Item
-			err = json.NewDecoder(listResp.Body).Decode(&items)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(items).NotTo(BeEmpty())
-
-			var found *openapi.Item
-			for i := range items {
-				if items[i].Name == itemName {
-					found = &items[i]
+			var found *client.Item
+			for i := range *listResp.JSON200 {
+				if (*listResp.JSON200)[i].Name == itemName {
+					found = &(*listResp.JSON200)[i]
 					break
 				}
 			}

@@ -1,7 +1,7 @@
 package e2e_test
 
 import (
-	"encoding/json"
+	"context"
 	"net/http"
 	"time"
 
@@ -11,30 +11,25 @@ import (
 
 var _ = Describe("HealthCheck API (/healthz)", func() {
 	It("returns HTTP 200 with status ok and valid RFC3339 timestamp", func() {
-		resp, err := httpClient.Get(baseURL + "/healthz")
-		Expect(err).NotTo(HaveOccurred())
-		defer func() { _ = resp.Body.Close() }()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		Expect(resp.Header.Get("Content-Type")).To(ContainSubstring("application/json"))
-
-		var body struct {
-			Status    string `json:"status"`
-			Timestamp string `json:"timestamp"`
-		}
-		err = json.NewDecoder(resp.Body).Decode(&body)
+		resp, err := apiClient.GetHealthWithResponse(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(body.Status).To(Equal("ok"))
-		Expect(body.Timestamp).NotTo(BeEmpty())
-
-		parsedTime, err := time.Parse(time.RFC3339, body.Timestamp)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(time.Since(parsedTime)).To(BeNumerically("<", 10*time.Second))
+		Expect(resp.StatusCode()).To(Equal(http.StatusOK))
+		Expect(resp.ContentType()).To(ContainSubstring("application/json"))
+		Expect(resp.JSON200).NotTo(BeNil())
+		Expect(resp.JSON200.Status).NotTo(BeNil())
+		Expect(*resp.JSON200.Status).To(Equal("ok"))
+		Expect(resp.JSON200.Timestamp).NotTo(BeNil())
+		Expect(time.Since(*resp.JSON200.Timestamp)).To(BeNumerically("<", 10*time.Second))
 	})
 
 	It("returns HTTP 405 Method Not Allowed for unsupported methods", func() {
-		resp, err := httpClient.Post(baseURL+"/healthz", "application/json", nil)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, baseURL+"/healthz", nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err := httpClient.Do(req)
 		Expect(err).NotTo(HaveOccurred())
 		defer func() { _ = resp.Body.Close() }()
 

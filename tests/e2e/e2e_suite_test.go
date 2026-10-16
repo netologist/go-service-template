@@ -11,19 +11,19 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	itemv1 "github.com/netologist/go-service-template/pkg/proto/item/v1"
+	"github.com/netologist/go-service-template/pkg/client"
+	clientgrpc "github.com/netologist/go-service-template/pkg/client/grpc"
 )
 
 var (
 	baseURL          string
 	grpcTarget       string
 	httpClient       *http.Client
-	grpcConn         *grpc.ClientConn
-	grpcItemClient   itemv1.ItemServiceClient
+	apiClient        *client.ClientWithResponses
+	grpcClient       *clientgrpc.Client
+	grpcItemClient   clientgrpc.ItemClient
 	grpcHealthClient grpc_health_v1.HealthClient
 )
 
@@ -50,15 +50,20 @@ var _ = BeforeSuite(func() {
 		Timeout: 10 * time.Second,
 	}
 
+	var clientErr error
+	apiClient, clientErr = client.NewClientWithResponses(baseURL, client.WithHTTPClient(httpClient))
+	Expect(clientErr).NotTo(HaveOccurred())
+
 	Eventually(func() error {
-		resp, err := httpClient.Get(baseURL + "/healthz")
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		resp, err := apiClient.GetHealthWithResponse(ctx)
 		if err != nil {
 			return err
 		}
-		defer func() { _ = resp.Body.Close() }()
-
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("readiness probe returned status %d", resp.StatusCode)
+		if resp.StatusCode() != http.StatusOK {
+			return fmt.Errorf("readiness probe returned status %d", resp.StatusCode())
 		}
 		return nil
 	}).WithTimeout(startupTimeout).WithPolling(startupPollInterval).Should(
@@ -74,11 +79,11 @@ var _ = BeforeSuite(func() {
 	}
 
 	var connErr error
-	grpcConn, connErr = grpc.NewClient(grpcTarget, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcClient, connErr = clientgrpc.NewClient(grpcTarget)
 	Expect(connErr).NotTo(HaveOccurred())
 
-	grpcItemClient = itemv1.NewItemServiceClient(grpcConn)
-	grpcHealthClient = grpc_health_v1.NewHealthClient(grpcConn)
+	grpcItemClient = grpcClient.Items()
+	grpcHealthClient = grpc_health_v1.NewHealthClient(grpcClient.Conn())
 
 	Eventually(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -100,7 +105,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	if grpcConn != nil {
-		_ = grpcConn.Close()
+	if grpcClient != nil {
+		_ = grpcClient.Close()
 	}
 })
