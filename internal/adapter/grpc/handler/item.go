@@ -8,9 +8,9 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/netologist/go-service-template/internal/domain"
+	"github.com/netologist/go-service-template/internal/gen/goventer"
 	itemv1 "github.com/netologist/go-service-template/internal/gen/grpc/item/v1"
 	"github.com/netologist/go-service-template/internal/usecase"
 )
@@ -19,6 +19,7 @@ import (
 type ItemHandler struct {
 	itemv1.UnimplementedItemServiceServer
 	itemService usecase.ItemService
+	converter   goventer.ItemConverter
 }
 
 var _ itemv1.ItemServiceServer = (*ItemHandler)(nil)
@@ -27,6 +28,7 @@ var _ itemv1.ItemServiceServer = (*ItemHandler)(nil)
 func NewItemHandler(itemService usecase.ItemService) *ItemHandler {
 	return &ItemHandler{
 		itemService: itemService,
+		converter:   goventer.NewItemConverter(),
 	}
 }
 
@@ -56,7 +58,7 @@ func (h *ItemHandler) CreateItem(
 	}
 
 	return &itemv1.CreateItemResponse{
-		Item: toProtoItem(model),
+		Item: h.converter.ToProtoItem(model),
 	}, nil
 }
 
@@ -85,21 +87,10 @@ func (h *ItemHandler) FindItems(
 		if nameFilter != "" && !strings.Contains(strings.ToLower(it.Name), strings.ToLower(nameFilter)) {
 			continue
 		}
-		protoItems = append(protoItems, toProtoItem(it))
+		protoItems = append(protoItems, h.converter.ToProtoItem(it))
 	}
 
 	return &itemv1.FindItemsResponse{
 		Items: protoItems,
 	}, nil
-}
-
-func toProtoItem(item domain.Item) *itemv1.Item {
-	return &itemv1.Item{
-		Id:          item.ID.String(),
-		Name:        item.Name,
-		Description: item.Description,
-		Price:       item.Price,
-		CreatedAt:   timestamppb.New(item.CreatedAt),
-		UpdatedAt:   timestamppb.New(item.UpdatedAt),
-	}
 }

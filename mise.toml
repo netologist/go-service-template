@@ -100,6 +100,10 @@ run = "buf generate"
 description = "Generate Go code from SQL queries with sqlc"
 run = "go tool sqlc generate"
 
+[tasks."generate:goverter"]
+description = "Generate type-safe struct converters with goverter"
+run = "go tool goverter gen ./internal/gen/goventer/..."
+
 [tasks."migrate:up"]
 description = "Apply database migrations with Goose"
 run = "go tool goose up"
@@ -128,8 +132,8 @@ run = "docker compose down -v"
 run = "docker compose exec postgres psql -U postgres -d service_db"
 
 [tasks."generate"]
-description = "Run all code generators (OpenAPI Server, Client, Protobuf, SQL queries, Mocks)"
-depends = ["generate:oapi", "generate:client", "generate:proto", "generate:sqlc", "generate:mocks"]
+description = "Run all code generators (OpenAPI Server, Client, Protobuf, SQL queries, Mocks, Converters)"
+depends = ["generate:oapi", "generate:client", "generate:proto", "generate:sqlc", "generate:mocks", "generate:goverter"]
 [tasks."generate:mocks"]
 description = "Generate mocks with mockery"
 alias = "mocks:generate"
@@ -145,6 +149,11 @@ run = "rm -rf internal/gen/mocks"
 description = "Fail if generated mocks are out of date (for CI)"
 depends = ["generate:mocks"]
 run = "git diff --exit-code -- internal/gen/mocks"
+
+[tasks."goverter:check"]
+description = "Fail if generated converters are out of date (for CI)"
+depends = ["generate:goverter"]
+run = "git diff --exit-code -- internal/gen/goventer"
 
 [tasks."template:init"]
 description = "Initialize project with a new module name (usage: mise run template:init <new-module-path>)"

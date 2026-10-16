@@ -6,6 +6,7 @@ import (
 
 	"github.com/netologist/go-service-template/internal/adapter/httpapi/problem"
 	"github.com/netologist/go-service-template/internal/domain"
+	"github.com/netologist/go-service-template/internal/gen/goventer"
 	"github.com/netologist/go-service-template/internal/gen/openapi"
 	"github.com/netologist/go-service-template/internal/usecase"
 )
@@ -13,11 +14,13 @@ import (
 func NewItemHandler(itemService usecase.ItemService) *ItemHandler {
 	return &ItemHandler{
 		itemService: itemService,
+		converter:   goventer.NewItemConverter(),
 	}
 }
 
 type ItemHandler struct {
 	itemService usecase.ItemService
+	converter   goventer.ItemConverter
 }
 
 func (h *ItemHandler) CreateItem(
@@ -46,7 +49,7 @@ func (h *ItemHandler) CreateItem(
 		return nil, err
 	}
 
-	return openapi.CreateItem201JSONResponse(toItemResponse(model)), nil
+	return openapi.CreateItem201JSONResponse(h.converter.ToOpenAPIItem(model)), nil
 }
 
 func (h *ItemHandler) FindItems(
@@ -58,26 +61,5 @@ func (h *ItemHandler) FindItems(
 		return nil, err
 	}
 
-	return openapi.FindItems200JSONResponse(toItemListResponse(model)), nil
-}
-
-// mapper methods
-
-func toItemResponse(output domain.Item) openapi.Item {
-	return openapi.Item{
-		Id:          output.ID,
-		Name:        output.Name,
-		Description: output.Description,
-		Price:       output.Price,
-		CreatedAt:   output.CreatedAt,
-		UpdatedAt:   output.UpdatedAt,
-	}
-}
-
-func toItemListResponse(items []domain.Item) []openapi.Item {
-	res := make([]openapi.Item, 0, len(items))
-	for _, it := range items {
-		res = append(res, toItemResponse(it))
-	}
-	return res
+	return openapi.FindItems200JSONResponse(h.converter.ToOpenAPIItemList(model)), nil
 }
