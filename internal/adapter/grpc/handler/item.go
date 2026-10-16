@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/netologist/go-service-template/internal/domain"
-	"github.com/netologist/go-service-template/internal/gen/goventer"
 	itemv1 "github.com/netologist/go-service-template/internal/gen/grpc/item/v1"
 	"github.com/netologist/go-service-template/internal/usecase"
 )
@@ -19,7 +18,7 @@ import (
 type ItemHandler struct {
 	itemv1.UnimplementedItemServiceServer
 	itemService usecase.ItemService
-	converter   goventer.ItemConverter
+	converter   ItemConverter
 }
 
 var _ itemv1.ItemServiceServer = (*ItemHandler)(nil)
@@ -28,7 +27,7 @@ var _ itemv1.ItemServiceServer = (*ItemHandler)(nil)
 func NewItemHandler(itemService usecase.ItemService) *ItemHandler {
 	return &ItemHandler{
 		itemService: itemService,
-		converter:   goventer.NewItemConverter(),
+		converter:   &ItemConverterImpl{},
 	}
 }
 

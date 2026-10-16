@@ -6,6 +6,7 @@ packages:
       recursive: true
       exclude-subpkg-regex:
         - ".*/internal/gen/.*"
+        - ".*/internal/adapter/.*"
       dir: "internal/gen/mocks/{{.SrcPackageName}}"
       pkgname: "{{.SrcPackageName}}mocks"
       filename: "{{.InterfaceName | snakecase}}_mock.go"

@@ -184,11 +184,11 @@ jobs:
           cache: true
 
       - name: Regenerate Goverter Converters
-        run: go tool goverter gen ./internal/gen/goventer/...
+        run: go tool goverter gen -output-constraint "" ./internal/adapter/...
 
       - name: Ensure converters are in sync
         run: |
-          if ! git diff --exit-code internal/gen/goventer; then
+          if ! git diff --exit-code '**/item_converter.gen.go'; then
             echo "Error: Generated converters are out of sync. Run 'mise run generate:goverter' and commit the changes."
             exit 1
           fi

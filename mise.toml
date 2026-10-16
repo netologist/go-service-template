@@ -102,7 +102,7 @@ run = "go tool sqlc generate"
 
 [tasks."generate:goverter"]
 description = "Generate type-safe struct converters with goverter"
-run = "go tool goverter gen ./internal/gen/goventer/..."
+run = "go tool goverter gen -output-constraint \"\" ./internal/adapter/..."
 
 [tasks."migrate:up"]
 description = "Apply database migrations with Goose"
@@ -153,7 +153,7 @@ run = "git diff --exit-code -- internal/gen/mocks"
 [tasks."goverter:check"]
 description = "Fail if generated converters are out of date (for CI)"
 depends = ["generate:goverter"]
-run = "git diff --exit-code -- internal/gen/goventer"
+run = "git diff --exit-code -- '**/item_converter.gen.go'"
 
 [tasks."template:init"]
 description = "Initialize project with a new module name (usage: mise run template:init <new-module-path>)"

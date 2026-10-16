@@ -6,7 +6,6 @@ import (
 
 	"github.com/netologist/go-service-template/internal/adapter/httpapi/problem"
 	"github.com/netologist/go-service-template/internal/domain"
-	"github.com/netologist/go-service-template/internal/gen/goventer"
 	"github.com/netologist/go-service-template/internal/gen/openapi"
 	"github.com/netologist/go-service-template/internal/usecase"
 )
@@ -14,13 +13,13 @@ import (
 func NewItemHandler(itemService usecase.ItemService) *ItemHandler {
 	return &ItemHandler{
 		itemService: itemService,
-		converter:   goventer.NewItemConverter(),
+		converter:   &ItemConverterImpl{},
 	}
 }
 
 type ItemHandler struct {
 	itemService usecase.ItemService
-	converter   goventer.ItemConverter
+	converter   ItemConverter
 }
 
 func (h *ItemHandler) CreateItem(
