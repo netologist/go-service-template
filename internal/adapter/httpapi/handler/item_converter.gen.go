@@ -3,10 +3,9 @@
 package handler
 
 import (
-	"time"
-
 	domain "github.com/netologist/go-service-template/internal/domain"
 	openapi "github.com/netologist/go-service-template/internal/gen/openapi"
+	"time"
 )
 
 type ItemConverterImpl struct{}

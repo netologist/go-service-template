@@ -3,10 +3,9 @@
 package postgres
 
 import (
-	"time"
-
 	domain "github.com/netologist/go-service-template/internal/domain"
 	sqlc "github.com/netologist/go-service-template/internal/gen/sqlc"
+	"time"
 )
 
 type ItemConverterImpl struct{}

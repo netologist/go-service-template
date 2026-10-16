@@ -27,7 +27,7 @@ run = "go tool golangci-lint run --fix ./..."
 
 [tasks."format"]
 description = "Format Go code with goimports (grouped with module prefix)"
-run = "find . -type f -name '*.go' -not -path './vendor/*' -not -path './internal/gen/*' -not -path './pkg/proto/*' -exec go tool goimports -local github.com/netologist/go-service-template -w {} +"
+run = "find . -type f -name '*.go' -not -name '*.gen.go' -not -path './vendor/*' -not -path './internal/gen/*' -not -path './pkg/proto/*' -exec go tool goimports -local github.com/netologist/go-service-template -w {} +"
 
 [tasks."secret:check"]
 description = "Run Gitleaks to detect secrets"
